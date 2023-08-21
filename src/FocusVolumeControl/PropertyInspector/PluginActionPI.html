@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,minimal-ui,viewport-fit=cover">
+    <meta name=apple-mobile-web-app-capable content=yes>
+    <meta name=apple-mobile-web-app-status-bar-style content=black>
+    <title>FocusVolumeControl Settings</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/barraider/streamdeck-easypi@latest/src/sdpi.css">
+    <script src="https://cdn.jsdelivr.net/gh/barraider/streamdeck-easypi@latest/src/sdtools.common.js"></script>
+</head>
+<body>
+    <div class="sdpi-wrapper">
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Fallback</div>
+            <select class="sdpi-item-value sdProperty" id="fallbackBehavior" oninput="setSettings()">
+                <option value="0">System Sounds</option>
+                <option value="1">Previous App</option>
+                <option value="2">Main System Volume</option>
+            </select>
+        </div>
+            <details>
+                <p>If you look at windows volume mixer, you will see that not all applications can have their volume controlled. The fallback behavior controls what happens when you are in an application that doesn't show up in the volume mixer</p>
+                <p>* System Sounds - Switch to system sounds. This will control windows sound effects such as when an error sound plays. If you're in an application that is making beeping sounds, this will often allow you to control those sounds while leaving things like your music/videos alone</p>
+                <p>* Previous App - Use the last app that had a volume control. This can result in the stream deck not changing after you have quit an application.</p>
+                <p>* Main System Volume - Switch to the main volume control for the system. This will change the volume of all applications</p>
+           </details>
+    </div>
+</body>
+</html>

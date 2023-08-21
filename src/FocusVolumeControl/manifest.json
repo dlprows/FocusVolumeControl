@@ -1,0 +1,51 @@
+{
+  "Actions": [
+    {
+      "Name": "Focused App Volume",
+      "Icon": "Images/actionIcon",
+      "States": [
+        {
+          "Image": "Images/stateIcon",
+          "TitleAlignment": "middle",
+          "FontSize": "12"
+        }
+      ],
+      "Controllers": [ "Encoder" ],
+      "Encoder": {
+        "background": "backgroundImage",
+        "Icon": "Images/actionIcon",
+        "layout": "$B1",
+        "StackColor": "#AABBCC",
+        "TriggerDescription": {
+          "Rotate": "Change the volume",
+          "Push": "Mute",
+          "Touch": "Mute",
+          "LongTouch": "Reset"
+        }
+      },
+      "SupportedInMultiActions": false,
+      "Tooltip": "Control the volume of the focused application",
+      "UUID": "com.dlprows.focusvolumecontrol.dialaction",
+      "PropertyInspectorPath": "PropertyInspector/PluginActionPI.html"
+    }
+  ],
+  "Author": "dlprows",
+  "Name": "Focused Application Volume",
+  "Description": "Control the volume of the focused application",
+  "URL": "https://github.com/dlprows/FocusVolumeControl",
+  "Version": "1.0.0",
+  "CodePath": "FocusVolumeControl",
+  "Category": "Volume Control [dlprows]",
+  "Icon": "Images/pluginIcon",
+  "CategoryIcon": "Images/categoryIcon",
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "SDKVersion": 2,
+  "Software": {
+    "MinimumVersion": "6.0"
+  }
+}
