@@ -66,7 +66,6 @@ public class DialAction : EncoderBase
 		_thread.SetApartmentState(ApartmentState.STA);
 		_thread.Start();
 
-
 		_currentAudioSession = settings.FallbackBehavior == FallbackBehavior.SystemSounds ? _audioHelper.GetSystemSounds() : _audioHelper.GetSystemVolume();
 	}
 
@@ -207,10 +206,17 @@ public class DialAction : EncoderBase
 	}
 
 
-        public void WinEventProc(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
-        {
-		OnTick();
-        }
-
+	public void WinEventProc(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
+	{
+		try
+		{
+			OnTick();
+			Thread.Sleep(TimeSpan.FromSeconds(1));
+		}
+		catch (Exception ex)
+		{
+			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Exception on WinEventProc\n {ex}");
+		}
+	}
 
 }
