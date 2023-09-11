@@ -65,18 +65,14 @@ public class ActiveAudioSessionWrapper : IAudioSession
 	{
 		//if you have more than one volume. they will all get set based on the first volume control
 		var level = Volume.FirstOrDefault()?.MasterVolume ?? 0;
-
-		level += (0.01f * step) * ticks;
-		level = Math.Max(level, 0);
-		level = Math.Min(level, 1);
-
+		level = VolumeHelpers.GetAdjustedVolume(level, step, ticks);
 		Volume.ForEach(x => x.MasterVolume = level);
 	}
 
 	public int GetVolumeLevel()
 	{
 		var level = Volume.FirstOrDefault()?.MasterVolume ?? 0;
-		return (int)(level * 100);
+		return VolumeHelpers.GetVolumePercentage(level);
 	}
 
 }

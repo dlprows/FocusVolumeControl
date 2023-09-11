@@ -56,6 +56,7 @@
   <ItemGroup>
     <Compile Include="AudioSessions\ActiveAudioSessionWrapper.cs" />
     <Compile Include="AudioHelper.cs" />
+    <Compile Include="AudioSessions\VolumeHelpers.cs" />
     <Compile Include="AudioSessions\SystemSoundsAudioSession.cs" />
     <Compile Include="AudioSessions\SystemVolumeAudioSession.cs" />
     <Compile Include="DialAction.cs" />
@@ -81,6 +82,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\**\*.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="PropertyInspector\**\*.js;PropertyInspector\**\*.css">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="PropertyInspector\PluginActionPI.html">

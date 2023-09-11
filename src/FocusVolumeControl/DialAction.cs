@@ -19,6 +19,9 @@ public class DialAction : EncoderBase
 		[JsonProperty("fallbackBehavior")]
 		public FallbackBehavior FallbackBehavior { get; set; }
 
+		[JsonProperty("stepSize")]
+		public int StepSize { get; set; }
+
 		public static PluginSettings CreateDefaultSettings()
 		{
 			PluginSettings instance = new PluginSettings();
@@ -67,6 +70,7 @@ public class DialAction : EncoderBase
 		_thread.Start();
 
 		_currentAudioSession = settings.FallbackBehavior == FallbackBehavior.SystemSounds ? _audioHelper.GetSystemSounds() : _audioHelper.GetSystemVolume();
+		_ = UpdateStateIfNeeded();
 	}
 
 	public override async void DialDown(DialPayload payload)
@@ -119,7 +123,7 @@ public class DialAction : EncoderBase
 		{
 			if (_currentAudioSession != null)
 			{
-				_currentAudioSession.IncrementVolumeLevel(1, payload.Ticks);
+				_currentAudioSession.IncrementVolumeLevel(settings.StepSize, payload.Ticks);
 				await UpdateStateIfNeeded();
 			}
 			else
@@ -137,54 +141,68 @@ public class DialAction : EncoderBase
 	public override void DialUp(DialPayload payload)
 	{
 		//dial unpressed
-		Logger.Instance.LogMessage(TracingLevel.INFO, "Dial Up");
 	}
 
 	public override void Dispose()
 	{
 		Logger.Instance.LogMessage(TracingLevel.DEBUG, "Disposing");
-            if(_foregroundWindowChangedEvent != IntPtr.Zero)
-            {
-                Native.UnhookWinEvent(_foregroundWindowChangedEvent);
-            }
+		if (_foregroundWindowChangedEvent != IntPtr.Zero)
+		{
+			Native.UnhookWinEvent(_foregroundWindowChangedEvent);
+		}
 		_dispatcher.InvokeShutdown();
 	}
 
 	public override async void OnTick()
 	{
-		//called once every 1000ms and can be used for updating the title/image of the key
-		var activeSession = _audioHelper.GetActiveSession(settings.FallbackBehavior);
-
-		if(activeSession != null)
+		try
 		{
-			_currentAudioSession = activeSession;
-		}
+			//called once every 1000ms and can be used for updating the title/image of the key
+			var activeSession = _audioHelper.GetActiveSession(settings.FallbackBehavior);
 
-		await UpdateStateIfNeeded();
+			if (activeSession != null)
+			{
+				_currentAudioSession = activeSession;
+			}
+
+			await UpdateStateIfNeeded();
+		}
+		catch (Exception ex)
+		{
+			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Exception on WinEventProc\n {ex}");
+		}
 	}
 
 	private async Task UpdateStateIfNeeded()
 	{
-		if (_currentAudioSession != null)
+		try
 		{
 
-			var uiState = new UIState(_currentAudioSession);
-
-			if ( _previousState != null && uiState != null &&
-				uiState.Title == _previousState.Title &&
-				uiState.Value.Value == _previousState.Value.Value &&
-				uiState.Value.Opacity == _previousState.Value.Opacity &&
-				uiState.Indicator.Value == _previousState.Indicator.Value &&
-				uiState.Indicator.Opacity == _previousState.Indicator.Opacity &&
-				uiState.icon.Value == _previousState.icon.Value &&
-				uiState.icon.Opacity == _previousState.icon.Opacity
-				)
+			if (_currentAudioSession != null)
 			{
-				return;
-			}
 
-			await Connection.SetFeedbackAsync(uiState);
-			_previousState = uiState;
+				var uiState = new UIState(_currentAudioSession);
+
+				if (_previousState != null && uiState != null &&
+					uiState.Title == _previousState.Title &&
+					uiState.Value.Value == _previousState.Value.Value &&
+					uiState.Value.Opacity == _previousState.Value.Opacity &&
+					uiState.Indicator.Value == _previousState.Indicator.Value &&
+					uiState.Indicator.Opacity == _previousState.Indicator.Opacity &&
+					uiState.icon.Value == _previousState.icon.Value &&
+					uiState.icon.Opacity == _previousState.icon.Opacity
+					)
+				{
+					return;
+				}
+
+				await Connection.SetFeedbackAsync(uiState);
+				_previousState = uiState;
+			}
+		}
+		catch (Exception ex )
+		{ 
+			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Failed to update screen\n {ex}");
 		}
 	}
 
@@ -208,15 +226,7 @@ public class DialAction : EncoderBase
 
 	public void WinEventProc(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
 	{
-		try
-		{
-			OnTick();
-			Thread.Sleep(TimeSpan.FromSeconds(1));
-		}
-		catch (Exception ex)
-		{
-			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Exception on WinEventProc\n {ex}");
-		}
+		OnTick();
 	}
 
 }

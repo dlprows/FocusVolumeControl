@@ -24,15 +24,10 @@ internal class SystemVolumeAudioSession : IAudioSession
 
 	public void IncrementVolumeLevel(int step, int ticks)
 	{
-		var level = _volumeControl.MasterVolumeLevelScalar;
-
-		level += (0.01f * step) * ticks;
-		level = Math.Max(level, 0);
-		level = Math.Min(level, 1);
-
+		var level = VolumeHelpers.GetAdjustedVolume(_volumeControl.MasterVolumeLevelScalar, step, ticks);
 		_volumeControl.MasterVolumeLevelScalar = level;
 	}
 
-	public int GetVolumeLevel() => (int)(_volumeControl.MasterVolumeLevelScalar * 100);
+	public int GetVolumeLevel() => VolumeHelpers.GetVolumePercentage(_volumeControl.MasterVolumeLevelScalar);
 
 }
