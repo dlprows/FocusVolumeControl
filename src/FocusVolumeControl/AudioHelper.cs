@@ -54,6 +54,14 @@ public class AudioHelper
 
 	static object _lock = new object();
 
+	public void ResetCache()
+	{
+		lock(_lock)
+		{
+			_current = null;
+		}
+	}
+
 	public IAudioSession GetActiveSession(FallbackBehavior fallbackBehavior)
 	{
 		lock (_lock)
@@ -67,11 +75,11 @@ public class AudioHelper
 
 			if(_current == null)
 			{
-				if(fallbackBehavior == FallbackBehavior.SystemSounds)
+				if(fallbackBehavior == FallbackBehavior.SystemSounds && _current is not SystemSoundsAudioSession)
 				{
 					_current = GetSystemSounds();
 				}
-				else if(fallbackBehavior == FallbackBehavior.SystemVolume)
+				else if(fallbackBehavior == FallbackBehavior.SystemVolume && _current is not SystemVolumeAudioSession)
 				{
 					_current = GetSystemVolume();
 				}
