@@ -73,54 +73,56 @@ public class DialAction : EncoderBase
 		_ = UpdateStateIfNeeded();
 	}
 
+	public override void Dispose()
+	{
+		Logger.Instance.LogMessage(TracingLevel.DEBUG, "Disposing");
+		if (_foregroundWindowChangedEvent != IntPtr.Zero)
+		{
+			Native.UnhookWinEvent(_foregroundWindowChangedEvent);
+		}
+		_dispatcher.InvokeShutdown();
+	}
+
 	public override async void DialDown(DialPayload payload)
-	{
-		//dial pressed down
-		Logger.Instance.LogMessage(TracingLevel.INFO, "Dial Down");
-		await ToggleMuteAsync();
-	}
-
-	public override async void TouchPress(TouchpadPressPayload payload)
-	{
-		Logger.Instance.LogMessage(TracingLevel.INFO, "Touch Press");
-		if (payload.IsLongPress)
-		{
-			_audioHelper.ResetAll();
-		}
-		else
-		{
-			await ToggleMuteAsync();
-		}
-	}
-
-	async Task ToggleMuteAsync()
 	{
 		try
 		{
+			Logger.Instance.LogMessage(TracingLevel.INFO, "Dial Down");
+			await ToggleMuteAsync();
+		}
+		catch (Exception ex)
+		{
+			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Unexpected Error in DialDown:\n {ex}");
+		}
+	}
+	public override void DialUp(DialPayload payload) { }
 
-			if (_currentAudioSession != null)
+	public override async void TouchPress(TouchpadPressPayload payload)
+	{
+		try
+		{
+			Logger.Instance.LogMessage(TracingLevel.INFO, "Touch Press");
+			if (payload.IsLongPress)
 			{
-				_currentAudioSession.ToggleMute();
-				await UpdateStateIfNeeded();
+				await ResetAllAsync();
 			}
 			else
 			{
-				await Connection.ShowAlert();
+				await ToggleMuteAsync();
 			}
 		}
 		catch (Exception ex)
 		{
-			await Connection.ShowAlert();
-			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Unable to toggle mute: {ex.Message}");
+			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Unexpected Error in TouchPress:\n {ex}");
 		}
 	}
 
 	public override async void DialRotate(DialRotatePayload payload)
 	{
-		Logger.Instance.LogMessage(TracingLevel.INFO, "Dial Rotate");
-		//dial rotated. ticks positive for right, negative for left
 		try
 		{
+			Logger.Instance.LogMessage(TracingLevel.INFO, "Dial Rotate");
+			//dial rotated. ticks positive for right, negative for left
 			if (_currentAudioSession != null)
 			{
 				_currentAudioSession.IncrementVolumeLevel(settings.StepSize, payload.Ticks);
@@ -133,24 +135,46 @@ public class DialAction : EncoderBase
 		}
 		catch (Exception ex)
 		{
+			_audioHelper.ResetCache();
 			await Connection.ShowAlert();
-			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Unable to toggle mute: {ex.Message}");
+			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Unable to increment volume:\n {ex}");
 		}
 	}
 
-	public override void DialUp(DialPayload payload)
+	async Task ResetAllAsync()
 	{
-		//dial unpressed
-	}
-
-	public override void Dispose()
-	{
-		Logger.Instance.LogMessage(TracingLevel.DEBUG, "Disposing");
-		if (_foregroundWindowChangedEvent != IntPtr.Zero)
+		try
 		{
-			Native.UnhookWinEvent(_foregroundWindowChangedEvent);
+			_audioHelper.ResetAll();
 		}
-		_dispatcher.InvokeShutdown();
+		catch
+		{
+			_audioHelper.ResetCache();
+			await Connection.ShowAlert();
+			throw;
+		}
+	}
+
+	async Task ToggleMuteAsync()
+	{
+		try
+		{
+			if (_currentAudioSession != null)
+			{
+				_currentAudioSession.ToggleMute();
+				await UpdateStateIfNeeded();
+			}
+			else
+			{
+				await Connection.ShowAlert();
+			}
+		}
+		catch
+		{
+			_audioHelper.ResetCache();
+			await Connection.ShowAlert();
+			throw;
+		}
 	}
 
 	public override async void OnTick()
@@ -169,7 +193,8 @@ public class DialAction : EncoderBase
 		}
 		catch (Exception ex)
 		{
-			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Exception on WinEventProc\n {ex}");
+			_audioHelper.ResetCache();
+			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Exception on Tick:\n {ex}");
 		}
 	}
 
@@ -177,7 +202,6 @@ public class DialAction : EncoderBase
 	{
 		try
 		{
-
 			if (_currentAudioSession != null)
 			{
 
@@ -200,8 +224,8 @@ public class DialAction : EncoderBase
 				_previousState = uiState;
 			}
 		}
-		catch (Exception ex )
-		{ 
+		catch (Exception ex)
+		{
 			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Failed to update screen\n {ex}");
 		}
 	}
@@ -214,19 +238,39 @@ public class DialAction : EncoderBase
 
 	public override void ReceivedSettings(ReceivedSettingsPayload payload)
 	{
-		Tools.AutoPopulateSettings(settings, payload.Settings);
-		SaveSettings();
+		try
+		{
+			Tools.AutoPopulateSettings(settings, payload.Settings);
+			SaveSettings();
+		}
+		catch (Exception ex)
+		{
+			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Unexpected Error in SaveSettings:\n {ex}");
+		}
 	}
 
-	private Task SaveSettings()
+	private async Task SaveSettings()
 	{
-		return Connection.SetSettingsAsync(JObject.FromObject(settings));
+		try
+		{
+			await Connection.SetSettingsAsync(JObject.FromObject(settings));
+		}
+		catch (Exception ex)
+		{
+			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Unexpected Error in SaveSettings:\n {ex}");
+		}
 	}
 
 
 	public void WinEventProc(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
 	{
-		OnTick();
+		try
+		{
+			OnTick();
+		}
+		catch (Exception ex)
+		{
+			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Unexpected Error in DialDown:\n {ex}");
+		}
 	}
-
 }
