@@ -35,7 +35,6 @@ public class DialAction : EncoderBase
 	IntPtr _foregroundWindowChangedEvent;
 	Native.WinEventDelegate _delegate;
 
-	IAudioSession _currentAudioSession;
 	AudioHelper _audioHelper = new AudioHelper();
 
 	Thread _thread;
@@ -48,7 +47,7 @@ public class DialAction : EncoderBase
 		if (payload.Settings == null || payload.Settings.Count == 0)
 		{
 			settings = PluginSettings.CreateDefaultSettings();
-			SaveSettings();
+			_ = SaveSettings();
 		}
 		else
 		{
@@ -69,8 +68,8 @@ public class DialAction : EncoderBase
 		_thread.SetApartmentState(ApartmentState.STA);
 		_thread.Start();
 
-		_currentAudioSession = settings.FallbackBehavior == FallbackBehavior.SystemSounds ? _audioHelper.GetSystemSounds() : _audioHelper.GetSystemVolume();
-		_ = UpdateStateIfNeeded();
+		var session = _audioHelper.GetActiveSession(settings.FallbackBehavior);
+		_ = UpdateStateIfNeeded(session);
 	}
 
 	public override void Dispose()
@@ -123,10 +122,11 @@ public class DialAction : EncoderBase
 		{
 			Logger.Instance.LogMessage(TracingLevel.INFO, "Dial Rotate");
 			//dial rotated. ticks positive for right, negative for left
-			if (_currentAudioSession != null)
+			var activeSession = _audioHelper.Current;
+			if (activeSession != null)
 			{
-				_currentAudioSession.IncrementVolumeLevel(settings.StepSize, payload.Ticks);
-				await UpdateStateIfNeeded();
+				activeSession.IncrementVolumeLevel(settings.StepSize, payload.Ticks);
+				await UpdateStateIfNeeded(activeSession);
 			}
 			else
 			{
@@ -159,10 +159,11 @@ public class DialAction : EncoderBase
 	{
 		try
 		{
-			if (_currentAudioSession != null)
+			var activeSession = _audioHelper.Current;
+			if (activeSession != null)
 			{
-				_currentAudioSession.ToggleMute();
-				await UpdateStateIfNeeded();
+				activeSession.ToggleMute();
+				await UpdateStateIfNeeded(activeSession);
 			}
 			else
 			{
@@ -184,12 +185,7 @@ public class DialAction : EncoderBase
 			//called once every 1000ms and can be used for updating the title/image of the key
 			var activeSession = _audioHelper.GetActiveSession(settings.FallbackBehavior);
 
-			if (activeSession != null)
-			{
-				_currentAudioSession = activeSession;
-			}
-
-			await UpdateStateIfNeeded();
+			await UpdateStateIfNeeded(activeSession);
 		}
 		catch (Exception ex)
 		{
@@ -198,14 +194,14 @@ public class DialAction : EncoderBase
 		}
 	}
 
-	private async Task UpdateStateIfNeeded()
+	private async Task UpdateStateIfNeeded(IAudioSession audioSession)
 	{
 		try
 		{
-			if (_currentAudioSession != null)
+			if (audioSession != null)
 			{
 
-				var uiState = new UIState(_currentAudioSession);
+				var uiState = new UIState(audioSession);
 
 				if (_previousState != null && uiState != null &&
 					uiState.Title == _previousState.Title &&
@@ -241,7 +237,7 @@ public class DialAction : EncoderBase
 		try
 		{
 			Tools.AutoPopulateSettings(settings, payload.Settings);
-			SaveSettings();
+			_ = SaveSettings();
 		}
 		catch (Exception ex)
 		{

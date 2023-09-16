@@ -1,33 +1,46 @@
-﻿using CoreAudio;
-using System;
+﻿using System;
+using System.Runtime.InteropServices;
 
 namespace FocusVolumeControl.AudioSessions;
 
-internal class SystemSoundsAudioSession : IAudioSession
+internal sealed class SystemSoundsAudioSession : IAudioSession
 {
-	public SystemSoundsAudioSession(SimpleAudioVolume volumeControl)
+	public SystemSoundsAudioSession(IAudioSessionControl2 sessionControl)
 	{
-		_volumeControl = volumeControl;
+		_sessionControl = sessionControl;
+		_volumeControl = (ISimpleAudioVolume)sessionControl;
 	}
 
-	SimpleAudioVolume _volumeControl;
+	IAudioSessionControl2 _sessionControl;
+	ISimpleAudioVolume _volumeControl;
 
 	public string DisplayName => "System sounds";
 	public string GetIcon() => "Images/systemSounds";
 
 	public void ToggleMute()
 	{
-		_volumeControl.Mute = !_volumeControl.Mute;
+		var guid = Guid.Empty;
+		_volumeControl.SetMute(!IsMuted(), ref guid);
 	}
 
-	public bool IsMuted() => _volumeControl.Mute;
+	public bool IsMuted()
+	{
+		_volumeControl.GetMute(out var mute);
+		return mute;
+	}
 
 	public void IncrementVolumeLevel(int step, int ticks)
 	{
-		var level = VolumeHelpers.GetAdjustedVolume(_volumeControl.MasterVolume, step, ticks);
-		_volumeControl.MasterVolume = level;
+		_volumeControl.GetMasterVolume(out var level);
+		level = VolumeHelpers.GetAdjustedVolume(level, step, ticks);
+
+		var guid = Guid.Empty;
+		_volumeControl.SetMasterVolume(level, ref guid);
 	}
 
-	public int GetVolumeLevel() => VolumeHelpers.GetVolumePercentage(_volumeControl.MasterVolume);
-
+	public int GetVolumeLevel()
+	{
+		_volumeControl.GetMasterVolume(out var level);
+		return VolumeHelpers.GetVolumePercentage(level);
+	}
 }

@@ -56,6 +56,7 @@
   <ItemGroup>
     <Compile Include="AudioSessions\ActiveAudioSessionWrapper.cs" />
     <Compile Include="AudioHelper.cs" />
+    <Compile Include="AudioSessions\CoreAudio.cs" />
     <Compile Include="AudioSessions\VolumeHelpers.cs" />
     <Compile Include="AudioSessions\SystemSoundsAudioSession.cs" />
     <Compile Include="AudioSessions\SystemVolumeAudioSession.cs" />
@@ -92,9 +93,6 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CoreAudio">
-      <Version>1.27.0</Version>
-    </PackageReference>
     <PackageReference Include="IsExternalInit">
       <Version>1.0.3</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

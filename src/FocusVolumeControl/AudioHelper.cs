@@ -1,33 +1,51 @@
-﻿using CoreAudio;
-using FocusVolumeControl.AudioSessions;
+﻿using FocusVolumeControl.AudioSessions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace FocusVolumeControl;
 
 public class AudioHelper
 {
-	IAudioSession _current;
+	static object _lock = new object();
 	List<Process> _currentProcesses;
+
+	public IAudioSession Current { get; private set; }
+
+	public void ResetCache()
+	{
+		lock (_lock)
+		{
+			Current = null;
+		}
+	}
 
 	public IAudioSession FindSession(List<Process> processes)
 	{
-		var deviceEnumerator = new MMDeviceEnumerator(Guid.NewGuid());
+		var deviceEnumerator = (CoreAudio)new MMDeviceEnumerator();
 
-		using var device = deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-		using var manager = device.AudioSessionManager2;
+		deviceEnumerator.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eMultimedia, out var device);
 
-		var sessions = manager.Sessions;
+		Guid iid = typeof(IAudioSessionManager2).GUID;
+		device.Activate(ref iid, 0, IntPtr.Zero, out var m);
+		var manager = (IAudioSessionManager2)m;
 
-		var matchingSession = new ActiveAudioSessionWrapper();
 
-		foreach (var session in sessions)
+		manager.GetSessionEnumerator(out var sessionEnumerator);
+
+		var results = new ActiveAudioSessionWrapper();
+
+		sessionEnumerator.GetCount(out var count);
+		for (int i = 0; i < count; i++)
 		{
-			var audioProcess = Process.GetProcessById((int)session.ProcessID);
+			sessionEnumerator.GetSession(i, out var session);
 
-			if (processes.Any(x => x.Id == session.ProcessID || x.ProcessName == audioProcess?.ProcessName))
+			session.GetProcessId(out var sessionProcessId);
+			var audioProcess = Process.GetProcessById(sessionProcessId);
+
+			if (processes.Any(x => x.Id == sessionProcessId || x.ProcessName == audioProcess?.ProcessName))
 			{
 				try
 				{
@@ -36,31 +54,24 @@ public class AudioHelper
 					{
 						displayName = audioProcess.ProcessName;
 					}
-					matchingSession.DisplayName = displayName;
+					results.DisplayName = displayName;
 				}
 				catch
 				{
-					matchingSession.DisplayName ??= audioProcess.ProcessName;
+					results.DisplayName ??= audioProcess.ProcessName;
 				}
 
-				matchingSession.ExecutablePath ??= audioProcess.MainModule.FileName;
+				results.ExecutablePath ??= audioProcess.MainModule.FileName;
 
 				//some apps like discord have multiple volume processes.
-				matchingSession.AddVolume(session.SimpleAudioVolume);
+				results.AddSession(session);
+
 			}
 		}
-		return matchingSession.Any() ? matchingSession : null;
+
+		return results.Any() ? results : null;
 	}
 
-	static object _lock = new object();
-
-	public void ResetCache()
-	{
-		lock(_lock)
-		{
-			_current = null;
-		}
-	}
 
 	public IAudioSession GetActiveSession(FallbackBehavior fallbackBehavior)
 	{
@@ -70,23 +81,23 @@ public class AudioHelper
 
 			if (_currentProcesses == null || !_currentProcesses.SequenceEqual(processes))
 			{
-				_current = FindSession(processes);
+				Current = FindSession(processes);
 			}
 
-			if(_current == null)
+			if (Current == null)
 			{
-				if(fallbackBehavior == FallbackBehavior.SystemSounds && _current is not SystemSoundsAudioSession)
+				if (fallbackBehavior == FallbackBehavior.SystemSounds && Current is not SystemSoundsAudioSession)
 				{
-					_current = GetSystemSounds();
+					Current = GetSystemSounds();
 				}
-				else if(fallbackBehavior == FallbackBehavior.SystemVolume && _current is not SystemVolumeAudioSession)
+				else if (fallbackBehavior == FallbackBehavior.SystemVolume && Current is not SystemVolumeAudioSession)
 				{
-					_current = GetSystemVolume();
+					Current = GetSystemVolume();
 				}
 			}
 
 			_currentProcesses = processes;
-			return _current;
+			return Current;
 		}
 	}
 
@@ -142,47 +153,65 @@ public class AudioHelper
 
 	public void ResetAll()
 	{
-		try
+		var deviceEnumerator = (CoreAudio)new MMDeviceEnumerator();
+
+		deviceEnumerator.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eMultimedia, out var device);
+
+		Guid iid = typeof(IAudioSessionManager2).GUID;
+		device.Activate(ref iid, 0, IntPtr.Zero, out var m);
+		var manager = (IAudioSessionManager2)m;
+
+
+		manager.GetSessionEnumerator(out var sessionEnumerator);
+
+		sessionEnumerator.GetCount(out var count);
+		for (int i = 0; i < count; i++)
 		{
-			var deviceEnumerator = new MMDeviceEnumerator(Guid.NewGuid());
+			sessionEnumerator.GetSession(i, out var session);
 
-			using var device = deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-			using var manager = device.AudioSessionManager2;
-
-			foreach (var session in manager.Sessions)
-			{
-				session.SimpleAudioVolume.MasterVolume = 1;
-				session.SimpleAudioVolume.Mute = false;
-			}
+			var volume = (ISimpleAudioVolume)session;
+			var guid = Guid.Empty;
+			volume.SetMasterVolume(1, ref guid);
+			volume.SetMute(false, ref guid);
 		}
-		catch { }
 	}
 
 	public IAudioSession GetSystemSounds()
 	{
-		var deviceEnumerator = new MMDeviceEnumerator(Guid.NewGuid());
+		var deviceEnumerator = (CoreAudio)new MMDeviceEnumerator();
 
-		using var device = deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-		using var manager = device.AudioSessionManager2;
+		deviceEnumerator.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eMultimedia, out var device);
 
-		var sessions = manager.Sessions;
+		Guid iid = typeof(IAudioSessionManager2).GUID;
+		device.Activate(ref iid, 0, IntPtr.Zero, out var m);
+		var manager = (IAudioSessionManager2)m;
 
-		foreach (var session in sessions)
+
+		manager.GetSessionEnumerator(out var sessionEnumerator);
+
+		sessionEnumerator.GetCount(out var count);
+		for (int i = 0; i < count; i++)
 		{
-			if (session.IsSystemSoundsSession)
+			sessionEnumerator.GetSession(i, out var session);
+
+			if (session.IsSystemSoundsSession() == 0)
 			{
-				return new SystemSoundsAudioSession(session.SimpleAudioVolume);
+				return new SystemSoundsAudioSession(session);
 			}
 		}
-
 		return null;
 	}
 	public IAudioSession GetSystemVolume()
 	{
-		var deviceEnumerator = new MMDeviceEnumerator(Guid.NewGuid());
+		var deviceEnumerator = (CoreAudio)new MMDeviceEnumerator();
 
-		using var device = deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-		return new SystemVolumeAudioSession(device.AudioEndpointVolume);
+		deviceEnumerator.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eMultimedia, out var device);
+
+		Guid iid = typeof(IAudioEndpointVolume).GUID;
+		device.Activate(ref iid, 0, IntPtr.Zero, out var o);
+		var endpointVolume = (IAudioEndpointVolume)o;
+
+		return new SystemVolumeAudioSession(endpointVolume);
 	}
 
 }

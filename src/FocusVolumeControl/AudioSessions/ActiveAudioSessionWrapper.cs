@@ -1,17 +1,18 @@
-﻿using CoreAudio;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using BarRaider.SdTools;
 using System.Drawing;
+using System.Runtime.InteropServices;
 
 namespace FocusVolumeControl.AudioSessions;
 
-public class ActiveAudioSessionWrapper : IAudioSession
+public sealed class ActiveAudioSessionWrapper : IAudioSession
 {
 	public string DisplayName { get; set; }
 	public string ExecutablePath { get; set; }
-	private List<SimpleAudioVolume> Volume { get; } = new List<SimpleAudioVolume>();
+	private List<IAudioSessionControl2> Sessions { get; } = new List<IAudioSessionControl2>();
+	private IEnumerable<ISimpleAudioVolume> Volume => Sessions.Cast<ISimpleAudioVolume>();
 
 	string _icon;
 
@@ -36,11 +37,11 @@ public class ActiveAudioSessionWrapper : IAudioSession
 	{
 		return Volume.Any();
 	}
-	public int Count => Volume.Count;
+	public int Count => Sessions.Count;
 
-	public void AddVolume(SimpleAudioVolume volume)
+	public void AddSession(IAudioSessionControl2 session)
 	{
-		Volume.Add(volume);
+		Sessions.Add(session);
 	}
 
 	public void ToggleMute()
@@ -51,28 +52,52 @@ public class ActiveAudioSessionWrapper : IAudioSession
 		//when any volumes are unmuted, Volume.All will return false
 		//so we set muted to true (opposite of Volume.All)
 
-		var muted = Volume.All(x => x.Mute);
+		var muted = IsMuted();
 
-		Volume.ForEach(x => x.Mute = !muted);
+		foreach(var v in Volume)
+		{
+			var guid = Guid.Empty;
+			v.SetMute(!muted, ref guid);
+		}
 	}
 
 	public bool IsMuted()
 	{
-		return Volume.All(x => x.Mute);
+		return Volume.All(x =>
+		{
+			x.GetMute(out var mute); 
+			return mute;
+		});
 	}
 
 	public void IncrementVolumeLevel(int step, int ticks)
 	{
 		//if you have more than one volume. they will all get set based on the first volume control
-		var level = Volume.FirstOrDefault()?.MasterVolume ?? 0;
+		var volume = Volume.FirstOrDefault();
+		var level = 0f;
+		if (volume != null)
+		{
+			volume.GetMasterVolume(out level);
+		}
+	
 		level = VolumeHelpers.GetAdjustedVolume(level, step, ticks);
-		Volume.ForEach(x => x.MasterVolume = level);
+
+		foreach(var v in Volume)
+		{
+			var guid = Guid.Empty;
+			v.SetMasterVolume(level, ref guid);
+		}
 	}
 
 	public int GetVolumeLevel()
 	{
-		var level = Volume.FirstOrDefault()?.MasterVolume ?? 0;
+		var volume = Volume.FirstOrDefault();
+		var level = 0f;
+		if(volume != null)
+		{
+			volume.GetMasterVolume(out level);
+		}
+
 		return VolumeHelpers.GetVolumePercentage(level);
 	}
-
 }

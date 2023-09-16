@@ -1,4 +1,6 @@
-﻿namespace FocusVolumeControl.AudioSessions;
+﻿using System;
+
+namespace FocusVolumeControl.AudioSessions;
 
 public interface IAudioSession
 {
