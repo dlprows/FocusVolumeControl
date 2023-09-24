@@ -36,6 +36,7 @@ public class AudioHelper
 		manager.GetSessionEnumerator(out var sessionEnumerator);
 
 		var results = new ActiveAudioSessionWrapper();
+		var currentIndex = int.MaxValue;
 
 		sessionEnumerator.GetCount(out var count);
 		for (int i = 0; i < count; i++)
@@ -45,23 +46,33 @@ public class AudioHelper
 			session.GetProcessId(out var sessionProcessId);
 			var audioProcess = Process.GetProcessById(sessionProcessId);
 
-			if (processes.Any(x => x.Id == sessionProcessId || x.ProcessName == audioProcess?.ProcessName))
-			{
-				try
-				{
-					var displayName = audioProcess.MainModule.FileVersionInfo.FileDescription;
-					if (string.IsNullOrEmpty(displayName))
-					{
-						displayName = audioProcess.ProcessName;
-					}
-					results.DisplayName = displayName;
-				}
-				catch
-				{
-					results.DisplayName ??= audioProcess.ProcessName;
-				}
+			var index = processes.FindIndex(x => x.Id == sessionProcessId || x.ProcessName == audioProcess?.ProcessName);
 
-				results.ExecutablePath ??= audioProcess.MainModule.FileName;
+			if (index > -1)
+			{
+				//processes will be ordered from best to worst (starts with the app, goes to parent)
+				//so we want the display name and executable path to come from the process that is closest to the front of the list
+				//but we want all matching sessions so things like discord work right
+				if (index < currentIndex)
+				{
+					try
+					{
+						var displayName = audioProcess.MainModule.FileVersionInfo.FileDescription;
+						if (string.IsNullOrEmpty(displayName))
+						{
+							displayName = audioProcess.ProcessName;
+						}
+						results.DisplayName = displayName;
+					}
+					catch
+					{
+						results.DisplayName = audioProcess.ProcessName;
+					}
+
+					results.ExecutablePath = audioProcess.MainModule.FileName;
+
+					currentIndex = index;
+				}
 
 				//some apps like discord have multiple volume processes.
 				results.AddSession(session);
@@ -143,14 +154,15 @@ public class AudioHelper
 			//Additionally, I group all audio processes that match instead of just the most specific, or the first, etc. Because Discord uses two processes, one for voice chat, and one for discord sounds.
 			//
 			//Steam and Discord are both very common, and end up butting heads in the algorithm.
-			//And I'm not overly fond of programming in special cases
-			//so for the time being, the only down side i've found for including the parent process is that when you launch a game from steam and change the volume, you also change steam's volume. but that really only impacts videos on steam store pages
-			//The icon is also often steam's icon instead of the games'.
-			//But i'm striving for functional before perfection.
-			var blah = ParentProcessUtilities.GetParentProcess(pid);
-			if (blah != null && blah.ProcessName != "explorer" && blah.ProcessName != "svchost")
+			//I want to avoid special cases, but since steam and discord are both so common, i'm making an exception.
+			var parentProcess = ParentProcessUtilities.GetParentProcess(pid);
+			if (parentProcess != null 
+				&& parentProcess.ProcessName != "explorer" 
+				&& parentProcess.ProcessName != "svchost"
+				&& (parentProcess.ProcessName == "steam" && processes.Any(x => x.ProcessName == "steamwebhelper")) //only include steam if the parent process is the steamwebhelper
+				)
 			{
-				processes.Add(blah);
+				processes.Add(parentProcess);
 			}
 		}
 		catch
