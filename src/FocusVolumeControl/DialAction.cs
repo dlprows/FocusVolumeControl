@@ -26,20 +26,13 @@ public class DialAction : EncoderBase
 		{
 			PluginSettings instance = new PluginSettings();
 			instance.FallbackBehavior = FallbackBehavior.SystemSounds;
+			instance.StepSize = 1;
 			return instance;
 		}
 	}
 
-	private PluginSettings settings;
-
-	IntPtr _foregroundWindowChangedEvent;
-	Native.WinEventDelegate _delegate;
-
+	PluginSettings settings;
 	AudioHelper _audioHelper = new AudioHelper();
-
-	Thread _thread;
-	Dispatcher _dispatcher;
-
 	UIState _previousState;
 
 	public DialAction(ISDConnection connection, InitialPayload payload) : base(connection, payload)
@@ -54,19 +47,7 @@ public class DialAction : EncoderBase
 			settings = payload.Settings.ToObject<PluginSettings>();
 		}
 
-		_thread = new Thread(() =>
-		{
-			Logger.Instance.LogMessage(TracingLevel.DEBUG, "Registering for events");
-			_delegate = new Native.WinEventDelegate(WinEventProc);
-			_foregroundWindowChangedEvent = Native.RegisterForForegroundWindowChangedEvent(_delegate);
-
-			Logger.Instance.LogMessage(TracingLevel.DEBUG, "Starting Dispatcher");
-			_dispatcher = Dispatcher.CurrentDispatcher;
-			Dispatcher.Run();
-			Logger.Instance.LogMessage(TracingLevel.DEBUG, "Dispatcher Stopped");
-		});
-		_thread.SetApartmentState(ApartmentState.STA);
-		_thread.Start();
+		WindowChangedEventLoop.Instance.WindowChanged += WindowChanged;
 
 		var session = _audioHelper.GetActiveSession(settings.FallbackBehavior);
 		_ = UpdateStateIfNeeded(session);
@@ -74,19 +55,15 @@ public class DialAction : EncoderBase
 
 	public override void Dispose()
 	{
-		Logger.Instance.LogMessage(TracingLevel.DEBUG, "Disposing");
-		if (_foregroundWindowChangedEvent != IntPtr.Zero)
-		{
-			Native.UnhookWinEvent(_foregroundWindowChangedEvent);
-		}
-		_dispatcher.InvokeShutdown();
+		//Logger.Instance.LogMessage(TracingLevel.DEBUG, "Disposing");
+		WindowChangedEventLoop.Instance.WindowChanged -= WindowChanged;
 	}
 
 	public override async void DialDown(DialPayload payload)
 	{
 		try
 		{
-			Logger.Instance.LogMessage(TracingLevel.INFO, "Dial Down");
+			//Logger.Instance.LogMessage(TracingLevel.INFO, "Dial Down");
 			await ToggleMuteAsync();
 		}
 		catch (Exception ex)
@@ -100,7 +77,7 @@ public class DialAction : EncoderBase
 	{
 		try
 		{
-			Logger.Instance.LogMessage(TracingLevel.INFO, "Touch Press");
+			//Logger.Instance.LogMessage(TracingLevel.INFO, "Touch Press");
 			if (payload.IsLongPress)
 			{
 				await ResetAllAsync();
@@ -120,7 +97,7 @@ public class DialAction : EncoderBase
 	{
 		try
 		{
-			Logger.Instance.LogMessage(TracingLevel.INFO, "Dial Rotate");
+			//Logger.Instance.LogMessage(TracingLevel.INFO, "Dial Rotate");
 			//dial rotated. ticks positive for right, negative for left
 			var activeSession = _audioHelper.Current;
 			if (activeSession != null)
@@ -258,7 +235,7 @@ public class DialAction : EncoderBase
 	}
 
 
-	public void WinEventProc(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
+	public void WindowChanged()
 	{
 		try
 		{
@@ -266,7 +243,7 @@ public class DialAction : EncoderBase
 		}
 		catch (Exception ex)
 		{
-			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Unexpected Error in DialDown:\n {ex}");
+			Logger.Instance.LogMessage(TracingLevel.ERROR, $"Unexpected Error in Window Down:\n {ex}");
 		}
 	}
 }

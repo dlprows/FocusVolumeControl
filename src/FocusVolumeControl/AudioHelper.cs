@@ -137,6 +137,16 @@ public class AudioHelper
 
 		try
 		{
+			//note. in instances where you launch a game from steam. this ends up mapping the process to both steam and to the game. which is unfortunate
+			//The problem is that if you don't use the parent processes, then the actual steam window won't get recognized. But if you do, then games will map to steam.
+			//
+			//Additionally, I group all audio processes that match instead of just the most specific, or the first, etc. Because Discord uses two processes, one for voice chat, and one for discord sounds.
+			//
+			//Steam and Discord are both very common, and end up butting heads in the algorithm.
+			//And I'm not overly fond of programming in special cases
+			//so for the time being, the only down side i've found for including the parent process is that when you launch a game from steam and change the volume, you also change steam's volume. but that really only impacts videos on steam store pages
+			//The icon is also often steam's icon instead of the games'.
+			//But i'm striving for functional before perfection.
 			var blah = ParentProcessUtilities.GetParentProcess(pid);
 			if (blah != null && blah.ProcessName != "explorer" && blah.ProcessName != "svchost")
 			{

@@ -10,6 +10,11 @@ namespace FocusVolumeControl.AudioSessions
 	{
 		public static float GetAdjustedVolume(float startingVolume, int step, int ticks)
 		{
+			if(step <= 0)
+			{
+				step = 1;
+			}
+
 			var level = startingVolume;
 
 			level += 0.01f * step * ticks;
