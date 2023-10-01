@@ -1,5 +1,6 @@
 ﻿using BarRaider.SdTools;
 using BarRaider.SdTools.Payloads;
+using FocusVolumeControl.AudioHelpers;
 using FocusVolumeControl.AudioSessions;
 using FocusVolumeControl.UI;
 using Newtonsoft.Json;
@@ -49,8 +50,13 @@ public class DialAction : EncoderBase
 
 		WindowChangedEventLoop.Instance.WindowChanged += WindowChanged;
 
-		var session = _audioHelper.GetActiveSession(settings.FallbackBehavior);
-		_ = UpdateStateIfNeeded(session);
+		try
+		{
+			//just in case we fail to get the active session, don't prevent the plugin from launching
+			var session = _audioHelper.GetActiveSession(settings.FallbackBehavior);
+			_ = UpdateStateIfNeeded(session);
+		}
+		catch { }
 	}
 
 	public override void Dispose()
