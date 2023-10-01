@@ -54,8 +54,9 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AudioHelpers\AppxPackage.cs" />
     <Compile Include="AudioSessions\ActiveAudioSessionWrapper.cs" />
-    <Compile Include="AudioHelper.cs" />
+    <Compile Include="AudioHelpers\AudioHelper.cs" />
     <Compile Include="AudioSessions\CoreAudio.cs" />
     <Compile Include="AudioSessions\VolumeHelpers.cs" />
     <Compile Include="AudioSessions\SystemSoundsAudioSession.cs" />
@@ -63,9 +64,10 @@
     <Compile Include="DialAction.cs" />
     <Compile Include="AudioSessions\IAudioSession.cs" />
     <Compile Include="FallbackBehavior.cs" />
+    <Compile Include="AudioHelpers\NameAndIconHelper.cs" />
     <Compile Include="UI\ISDConnectionExtensions.cs" />
     <Compile Include="Native.cs" />
-    <Compile Include="ParentProcessUtilities.cs" />
+    <Compile Include="AudioHelpers\ParentProcessUtilities.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UI\UIState.cs" />

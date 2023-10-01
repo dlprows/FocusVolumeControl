@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace FocusVolumeControl;
+namespace FocusVolumeControl.AudioHelpers;
 
 /// <summary>
 /// A utility class to determine a process parent.

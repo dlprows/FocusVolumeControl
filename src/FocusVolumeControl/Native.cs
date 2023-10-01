@@ -1,6 +1,8 @@
-﻿using System;
+﻿using FocusVolumeControl.AudioHelpers;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace FocusVolumeControl;
 
@@ -58,5 +60,16 @@ public class Native
 
 	[DllImport("ntdll.dll")]
 	public static extern int NtQueryInformationProcess(IntPtr processHandle, int processInformationClass, ref ParentProcessUtilities processInformation, int processInformationLength, out int returnLength);
+
+
+	[DllImport("Kernel32.dll")]
+	public static extern bool QueryFullProcessImageName(IntPtr hProcess, uint flags, StringBuilder buffer, ref uint bufferSize);
+
+	[DllImport("kernel32.dll")]
+	public static extern IntPtr OpenProcess(uint processAccess, bool inheritHandle, int processId);
+
+	[DllImport("kernel32.dll")]
+	public static extern bool CloseHandle(IntPtr hObject);
+
 
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using System.Runtime.InteropServices;
 
 namespace FocusVolumeControl.AudioSessions;
@@ -6,44 +7,66 @@ namespace FocusVolumeControl.AudioSessions;
 
 [ComImport]
 [Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
-internal class MMDeviceEnumerator
+public class MMDeviceEnumerator
 {
 }
 
-internal enum EDataFlow
+public enum DataFlow
 {
-	eRender,
-	eCapture,
-	eAll,
-	EDataFlow_enum_count
+	Render,
+	Capture,
+	All,
 }
 
-internal enum ERole
+public enum Role
 {
-	eConsole,
-	eMultimedia,
-	eCommunications,
-	ERole_enum_count
+	Console,
+	Multimedia,
+	Communications,
+}
+
+[Flags]
+public enum DeviceState : uint
+{
+	Active = 1 << 0,
+	Disabled = 1 << 1,
+	NotPresent = 1 << 2,
+	Unplugged = 1 << 3,
+	MaskAll = 0xFu
+}
+
+
+[Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E")]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+public interface IMMDeviceCollection
+{
+	[PreserveSig]
+	int GetCount(out int nDevices);
+
+	[PreserveSig]
+	int Item(int nDevice, out IMMDevice Device);
 }
 
 [Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal interface CoreAudio
+public interface IMMDeviceEnumerator
 {
-	int NotImpl1();
 
 	[PreserveSig]
-	int GetDefaultAudioEndpoint(EDataFlow dataFlow, ERole role, out IMMDevice ppDevice);
+	int EnumAudioEndpoints(DataFlow dataFlow, DeviceState StateMask, out IMMDeviceCollection deviceCollection);
+
+	[PreserveSig]
+	int GetDefaultAudioEndpoint(DataFlow dataFlow, Role role, out IMMDevice device);
 }
 
 [Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal interface IMMDevice
+public interface IMMDevice
 {
 	[PreserveSig]
 	int Activate(ref Guid iid, int dwClsCtx, IntPtr pActivationParams, [MarshalAs(UnmanagedType.IUnknown)] out object ppInterface);
 }
 
 [Guid("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal interface IAudioSessionManager2
+public interface IAudioSessionManager2
 {
 	int NotImpl1();
 	int NotImpl2();
@@ -53,7 +76,7 @@ internal interface IAudioSessionManager2
 }
 
 [Guid("E2F5BB11-0570-40CA-ACDD-3AA01277DEE8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal interface IAudioSessionEnumerator
+public interface IAudioSessionEnumerator
 {
 	[PreserveSig]
 	int GetCount(out int SessionCount);
@@ -63,7 +86,7 @@ internal interface IAudioSessionEnumerator
 }
 
 [Guid("87CE5498-68D6-44E5-9215-6DA47EF883D8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal interface ISimpleAudioVolume
+public interface ISimpleAudioVolume
 {
 	[PreserveSig]
 	int SetMasterVolume(float fLevel, ref Guid EventContext);

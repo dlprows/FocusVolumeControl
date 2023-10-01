@@ -11,6 +11,7 @@ public sealed class ActiveAudioSessionWrapper : IAudioSession
 {
 	public string DisplayName { get; set; }
 	public string ExecutablePath { get; set; }
+	public string IconPath { get; set; }
 	private List<IAudioSessionControl2> Sessions { get; } = new List<IAudioSessionControl2>();
 	private IEnumerable<ISimpleAudioVolume> Volume => Sessions.Cast<ISimpleAudioVolume>();
 
@@ -22,12 +23,21 @@ public sealed class ActiveAudioSessionWrapper : IAudioSession
 		{
 			try
 			{
-				var tmp = Icon.ExtractAssociatedIcon(ExecutablePath);
-				_icon = Tools.ImageToBase64(tmp.ToBitmap(), true);
+				if(!string.IsNullOrEmpty(IconPath))
+				{
+					var tmp = (Bitmap)Bitmap.FromFile(IconPath);
+					tmp.MakeTransparent();
+					_icon = Tools.ImageToBase64(tmp, true);
+				}
+				else
+				{
+					var tmp = Icon.ExtractAssociatedIcon(ExecutablePath);
+					_icon = Tools.ImageToBase64(tmp.ToBitmap(), true);
+				}
 			}
 			catch
 			{
-				_icon = "Image/encoderIcon";
+				_icon = "Images/encoderIcon";
 			}
 		}
 		return _icon;
