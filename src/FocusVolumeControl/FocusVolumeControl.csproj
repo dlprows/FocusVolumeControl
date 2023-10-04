@@ -65,6 +65,7 @@
     <Compile Include="AudioSessions\IAudioSession.cs" />
     <Compile Include="FallbackBehavior.cs" />
     <Compile Include="AudioHelpers\NameAndIconHelper.cs" />
+    <Compile Include="UI\IconExtraction.cs" />
     <Compile Include="UI\ISDConnectionExtensions.cs" />
     <Compile Include="Native.cs" />
     <Compile Include="AudioHelpers\ParentProcessUtilities.cs" />
@@ -96,6 +97,9 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="BitFaster.Caching">
+      <Version>2.2.1</Version>
+    </PackageReference>
     <PackageReference Include="IsExternalInit">
       <Version>1.0.3</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

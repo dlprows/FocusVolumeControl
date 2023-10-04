@@ -39,11 +39,23 @@ namespace FocusVolumeControl
 
 		public event Action WindowChanged;
 
-		private void WinEventProc(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
+		CancellationTokenSource? _cancellationTokenSource = null;
+
+		private async void WinEventProc(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
 		{
 			try
 			{
+				//debounce the window changed events by 100 ms because if you click mouse over an application on the start bar
+				//and then click on the preview window, it will quickly go from current -> fallback -> new app
+				//which can often result in it getting stuck on the fallback app
+				_cancellationTokenSource?.Cancel();
+				_cancellationTokenSource = new CancellationTokenSource();
+				await Task.Delay(100, _cancellationTokenSource.Token);
 				WindowChanged?.Invoke();
+			}
+			catch (TaskCanceledException)
+			{
+				//ignored
 			}
 			catch (Exception ex)
 			{

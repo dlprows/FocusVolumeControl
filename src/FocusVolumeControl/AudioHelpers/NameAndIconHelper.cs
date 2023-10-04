@@ -26,18 +26,22 @@ public class NameAndIconHelper
 			var appx = AppxPackage.FromProcess(process);
 			if (appx == null)
 			{
-				//usingg process.MainModule.FileVersionInfo sometimes throws permission exceptions
+				//using process.MainModule.FileVersionInfo sometimes throws permission exceptions
 				//we get the file version info with a limited query flag to avoid that
 				var fileVersionInfo = GetFileVersionInfo(process);
 
-				results.DisplayName = process.MainWindowTitle;
-
+				//if the display name is already set, then it came from the display name of the audio session
 				if (string.IsNullOrEmpty(results.DisplayName))
 				{
-					results.DisplayName = fileVersionInfo?.FileDescription;
+					results.DisplayName = process.MainWindowTitle;
+
 					if (string.IsNullOrEmpty(results.DisplayName))
 					{
-						results.DisplayName = process.ProcessName;
+						results.DisplayName = fileVersionInfo?.FileDescription;
+						if (string.IsNullOrEmpty(results.DisplayName))
+						{
+							results.DisplayName = process.ProcessName;
+						}
 					}
 				}
 

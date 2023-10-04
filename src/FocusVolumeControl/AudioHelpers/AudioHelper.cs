@@ -1,12 +1,8 @@
-﻿using BarRaider.SdTools;
-using FocusVolumeControl.AudioSessions;
+﻿using FocusVolumeControl.AudioSessions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace FocusVolumeControl.AudioHelpers;
 
@@ -24,6 +20,18 @@ public class AudioHelper
 		lock (_lock)
 		{
 			Current = null;
+		}
+	}
+
+	private Process GetProcessById(int id)
+	{
+		try
+		{
+			return Process.GetProcessById(id);
+		}
+		catch
+		{
+			return null;
 		}
 	}
 
@@ -55,7 +63,12 @@ public class AudioHelper
 				sessionEnumerator.GetSession(i, out var session);
 
 				session.GetProcessId(out var sessionProcessId);
-				var audioProcess = Process.GetProcessById(sessionProcessId);
+				var audioProcess = GetProcessById(sessionProcessId);
+
+				if(audioProcess == null)
+				{
+					continue;
+				}
 
 				var index = processes.FindIndex(x => x.Id == sessionProcessId || x.ProcessName == audioProcess?.ProcessName);
 
@@ -68,7 +81,14 @@ public class AudioHelper
 					{
 						bestProcessMatch = audioProcess;
 						currentIndex = index;
+
+						if(string.IsNullOrEmpty(results.DisplayName))
+						{
+							session.GetDisplayName(out var displayName);
+							results.DisplayName = displayName;
+						}
 					}
+
 
 					//some apps like discord have multiple volume processes.
 					//and some apps will be on multiple devices
@@ -92,7 +112,7 @@ public class AudioHelper
 		lock (_lock)
 		{
 			var processes = GetPossibleProcesses();
-			var processIds = processes.Select(x => x.Id).ToArray();
+			var processIds = processes?.Select(x => x.Id).ToArray();
 
 			if (_currentProcesses == null || !_currentProcesses.SequenceEqual(processIds))
 			{
@@ -138,7 +158,7 @@ public class AudioHelper
 
 		if (handle == IntPtr.Zero)
 		{
-			return null;
+			return new List<Process>();
 		}
 
 		var ids = Native.GetProcessesOfChildWindows(handle);
@@ -149,6 +169,11 @@ public class AudioHelper
 		var processes = ids.Distinct()
 						   .Select(x => Process.GetProcessById(x))
 						   .ToList();
+
+		if(processes.FirstOrDefault()?.ProcessName == "explorer")
+		{
+			return new List<Process>();
+		}
 
 		try
 		{
