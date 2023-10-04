@@ -33,7 +33,7 @@ public class DialAction : EncoderBase
 	}
 
 	PluginSettings settings;
-	AudioHelper _audioHelper = new AudioHelper();
+	static AudioHelper _audioHelper = new AudioHelper();
 	UIState _previousState;
 
 	public DialAction(ISDConnection connection, InitialPayload payload) : base(connection, payload)
