@@ -11,6 +11,32 @@ public class MMDeviceEnumerator
 {
 }
 
+[Flags]
+public enum CLSCTX : uint
+{
+	INPROC_SERVER = 0x1,
+	INPROC_HANDLER = 0x2,
+	LOCAL_SERVER = 0x4,
+	INPROC_SERVER16 = 0x8,
+	REMOTE_SERVER = 0x10,
+	INPROC_HANDLER16 = 0x20,
+	RESERVED1 = 0x40,
+	RESERVED2 = 0x80,
+	RESERVED3 = 0x100,
+	RESERVED4 = 0x200,
+	NO_CODE_DOWNLOAD = 0x400,
+	RESERVED5 = 0x800,
+	NO_CUSTOM_MARSHAL = 0x1000,
+	ENABLE_CODE_DOWNLOAD = 0x2000,
+	NO_FAILURE_LOG = 0x4000,
+	DISABLE_AAA = 0x8000,
+	ENABLE_AAA = 0x10000,
+	FROM_DEFAULT_CONTEXT = 0x20000,
+	INPROC = INPROC_SERVER | INPROC_HANDLER,
+	SERVER = INPROC_SERVER | LOCAL_SERVER | REMOTE_SERVER,
+	ALL = SERVER | INPROC_HANDLER
+}
+
 public enum DataFlow
 {
 	Render,
@@ -33,6 +59,13 @@ public enum DeviceState : uint
 	NotPresent = 1 << 2,
 	Unplugged = 1 << 3,
 	MaskAll = 0xFu
+}
+
+public enum AudioSessionState
+{
+	AudioSessionStateInactive = 0,
+	AudioSessionStateActive = 1,
+	AudioSessionStateExpired = 2
 }
 
 
@@ -62,7 +95,13 @@ public interface IMMDeviceEnumerator
 public interface IMMDevice
 {
 	[PreserveSig]
-	int Activate(ref Guid iid, int dwClsCtx, IntPtr pActivationParams, [MarshalAs(UnmanagedType.IUnknown)] out object ppInterface);
+	int Activate(ref Guid iid, CLSCTX dwClsCtx, IntPtr pActivationParams, [MarshalAs(UnmanagedType.IUnknown)] out object ppInterface);
+
+	[PreserveSig]
+	int NotImpl1();
+	[PreserveSig]
+	int GetId([Out, MarshalAs(UnmanagedType.LPWStr)] out string ppstrId);
+
 }
 
 [Guid("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -104,9 +143,9 @@ public interface ISimpleAudioVolume
 [Guid("bfb7ff88-7239-4fc9-8fa2-07c950be9c6d"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 public interface IAudioSessionControl2
 {
-	// IAudioSessionControl
+	//elgato seems to use this to determine whether the icon should be black and white
 	[PreserveSig]
-	int NotImpl0();
+	int GetState(out AudioSessionState audioSessionState);
 
 	[PreserveSig]
 	int GetDisplayName([MarshalAs(UnmanagedType.LPWStr)] out string pRetVal);
@@ -134,7 +173,7 @@ public interface IAudioSessionControl2
 
 	// IAudioSessionControl2
 	[PreserveSig]
-	int GetSessionIdentifier([MarshalAs(UnmanagedType.LPWStr)] out string pRetVal);
+	uint GetSessionIdentifier([MarshalAs(UnmanagedType.LPWStr)] out string pRetVal);
 
 	[PreserveSig]
 	int GetSessionInstanceIdentifier([MarshalAs(UnmanagedType.LPWStr)] out string pRetVal);

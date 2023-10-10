@@ -55,6 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AudioHelpers\AppxPackage.cs" />
+    <Compile Include="AudioSessions\IconWrapper.cs" />
     <Compile Include="AudioSessions\ActiveAudioSessionWrapper.cs" />
     <Compile Include="AudioHelpers\AudioHelper.cs" />
     <Compile Include="AudioSessions\CoreAudio.cs" />
@@ -71,6 +72,7 @@
     <Compile Include="AudioHelpers\ParentProcessUtilities.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UI\JavaIconExtractor.cs" />
     <Compile Include="UI\UIState.cs" />
     <Compile Include="UI\ValueWithOpacity.cs" />
     <Compile Include="WindowChangedEventLoop.cs" />

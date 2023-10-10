@@ -109,6 +109,13 @@ public sealed class AppxPackage
 							var properties = reader.GetProperties();
 
 							properties.GetStringValue("DisplayName", out var displayName);
+
+							if(displayName.StartsWith("ms-resource:"))
+							{
+								var packageFullName = Marshal.PtrToStringUni(info.packageFullName);
+								displayName = LoadResourceString(fullName, displayName);
+
+							}
 							package.DisplayName = displayName;
 
 							properties.GetStringValue("Logo", out var logo);
@@ -158,6 +165,40 @@ public sealed class AppxPackage
 				ClosePackageInfo(infoRef);
 			}
 		}
+
+	}
+
+	static string LoadResourceString(string packageFullName, string resource)
+	{
+		if (packageFullName == null)
+			throw new ArgumentNullException("packageFullName");
+
+		if (string.IsNullOrWhiteSpace(resource))
+			return null;
+
+		const string resourceScheme = "ms-resource:";
+		if (!resource.StartsWith(resourceScheme))
+			return null;
+
+		string part = resource.Substring(resourceScheme.Length);
+		string url;
+
+		if (part.StartsWith("/"))
+		{
+			url = resourceScheme + "//" + part;
+		}
+		else
+		{
+			url = resourceScheme + "///resources/" + part;
+		}
+
+		string source = string.Format("@{{{0}? {1}}}", packageFullName, url);
+		var sb = new StringBuilder(1024);
+		int i = SHLoadIndirectString(source, sb, sb.Capacity, IntPtr.Zero);
+		if (i != 0)
+			return null;
+
+		return sb.ToString();
 	}
 
 

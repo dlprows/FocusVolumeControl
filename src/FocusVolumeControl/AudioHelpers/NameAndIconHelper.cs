@@ -1,7 +1,10 @@
 ﻿using BarRaider.SdTools;
+using FocusVolumeControl.AudioSession;
 using FocusVolumeControl.AudioSessions;
+using FocusVolumeControl.UI;
 using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -10,12 +13,12 @@ namespace FocusVolumeControl.AudioHelpers;
 
 public class NameAndIconHelper
 {
-	public (string name, string icon) GetProcessInfo(Process process)
+	public string GetProcessInfo(Process process)
 	{
 		//i know this is dumb, but its only used by the sound browser, not real prod code
 		var blah = new ActiveAudioSessionWrapper();
 		SetProcessInfo(process, blah);
-		return (blah.DisplayName, blah.IconPath ?? blah.ExecutablePath);
+		return blah.DisplayName;
 	}
 
 	public void SetProcessInfo(Process process, ActiveAudioSessionWrapper results)
@@ -45,12 +48,27 @@ public class NameAndIconHelper
 					}
 				}
 
-				results.ExecutablePath = fileVersionInfo?.FileName;
+				//for java apps (minecraft), the process will just have a java icon
+				//and there's not just a file that you can get the real icon from
+				//so you have to send some messages to the apps to get the icons.
+				//but they will only be 32x32 (or smaller) so we only want to use this logic for java
+				//because these will be lower resolution than the normal way of getting icons
+				if (process.ProcessName == "javaw" || process.ProcessName == "java" || process.ProcessName == "dotnet")
+				{
+					var windowHandle = process.MainWindowHandle;
+					var lazyIcon = () => JavaIconExtractor.GetWindowBigIconWithRetry(windowHandle);
+					results.IconWrapper = new RawIcon(windowHandle.ToString(), lazyIcon);
+
+				}
+				else
+				{
+					results.IconWrapper = new NormalIcon(fileVersionInfo?.FileName);
+				}
 			}
 			else
 			{
 				results.DisplayName = appx.DisplayName;
-				results.IconPath = Path.Combine(appx.Path, appx.Logo);
+				results.IconWrapper = new AppxIcon(Path.Combine(appx.Path, appx.Logo));
 			}
 		}
 		catch { }

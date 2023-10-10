@@ -12,6 +12,7 @@ public class AudioHelper
 
 	static object _lock = new object();
 	int[] _currentProcesses;
+	int _retryFallbackCount = 0;
 
 	public IAudioSession Current { get; private set; }
 
@@ -49,9 +50,10 @@ public class AudioHelper
 			deviceCollection.Item(d, out var device);
 
 			Guid iid = typeof(IAudioSessionManager2).GUID;
-			device.Activate(ref iid, 0, IntPtr.Zero, out var m);
+			device.Activate(ref iid, CLSCTX.ALL, IntPtr.Zero, out var m);
 			var manager = (IAudioSessionManager2)m;
 
+			device.GetId(out var currentDeviceId);
 
 			manager.GetSessionEnumerator(out var sessionEnumerator);
 
@@ -114,9 +116,17 @@ public class AudioHelper
 			var processes = GetPossibleProcesses();
 			var processIds = processes?.Select(x => x.Id).ToArray();
 
-			if (_currentProcesses == null || !_currentProcesses.SequenceEqual(processIds))
+			//_currentProcesses null - first time getting sessions
+			//_currentProcesses not equal to processIds - changed the active process
+			//_retryFallbackCount - some processes like chrome or minecraft will start their audio process when they first try to do some sound stuff
+			if (_currentProcesses == null || !_currentProcesses.SequenceEqual(processIds) || _retryFallbackCount == 5)
 			{
+				_retryFallbackCount = 0;
 				Current = FindSession(processes);
+			}
+			else if(Current is SystemSoundsAudioSession || Current is SystemVolumeAudioSession)
+			{
+				_retryFallbackCount++;
 			}
 
 			if (Current == null)
@@ -214,7 +224,7 @@ public class AudioHelper
 			deviceCollection.Item(d, out var device);
 
 			Guid iid = typeof(IAudioSessionManager2).GUID;
-			device.Activate(ref iid, 0, IntPtr.Zero, out var m);
+			device.Activate(ref iid, CLSCTX.ALL, IntPtr.Zero, out var m);
 			var manager = (IAudioSessionManager2)m;
 
 
@@ -245,7 +255,7 @@ public class AudioHelper
 
 
 			Guid iid = typeof(IAudioSessionManager2).GUID;
-			device.Activate(ref iid, 0, IntPtr.Zero, out var m);
+			device.Activate(ref iid, CLSCTX.ALL, IntPtr.Zero, out var m);
 			var manager = (IAudioSessionManager2)m;
 
 
@@ -271,7 +281,7 @@ public class AudioHelper
 		deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia, out var device);
 
 		Guid iid = typeof(IAudioEndpointVolume).GUID;
-		device.Activate(ref iid, 0, IntPtr.Zero, out var o);
+		device.Activate(ref iid, CLSCTX.ALL, IntPtr.Zero, out var o);
 		var endpointVolume = (IAudioEndpointVolume)o;
 
 		return new SystemVolumeAudioSession(endpointVolume);

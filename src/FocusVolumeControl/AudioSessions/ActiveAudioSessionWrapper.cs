@@ -6,55 +6,27 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using FocusVolumeControl.UI;
 using BitFaster.Caching.Lru;
+using FocusVolumeControl.AudioSession;
 
 namespace FocusVolumeControl.AudioSessions;
 
 public sealed class ActiveAudioSessionWrapper : IAudioSession
 {
-	static ConcurrentLru<string, string> _iconCache = new ConcurrentLru<string, string>(10);
-
 	public string DisplayName { get; set; }
-	public string ExecutablePath { get; set; }
-	public string IconPath { get; set; }
 	private List<IAudioSessionControl2> Sessions { get; } = new List<IAudioSessionControl2>();
 	private IEnumerable<ISimpleAudioVolume> Volume => Sessions.Cast<ISimpleAudioVolume>();
 
-	string GetIconFromIconPath()
-	{
-		return _iconCache.GetOrAdd(IconPath, (key) =>
-		{
-			var tmp = (Bitmap)Bitmap.FromFile(IconPath);
-			tmp.MakeTransparent();
-			return Tools.ImageToBase64(tmp, true);
-		});
-	}
-
-	string GetIconFromExecutablePath()
-	{
-		return _iconCache.GetOrAdd(ExecutablePath, (key) =>
-		{
-			var tmp = IconExtraction.GetIcon(ExecutablePath);
-			//var tmp = Icon.ExtractAssociatedIcon(ExecutablePath);
-			return Tools.ImageToBase64(tmp, true);
-		});
-	}
+	public IconWrapper? IconWrapper { get; set; }
 
 	public string GetIcon()
 	{
 		try
 		{
-			if (!string.IsNullOrEmpty(IconPath))
-			{
-				return GetIconFromIconPath();
-			}
-			else
-			{
-				return GetIconFromExecutablePath();
-			}
+			return IconWrapper?.GetIconData() ?? IconWrapper.FallbackIconData;
 		}
 		catch
 		{
-			return "Images/encoderIcon";
+			return IconWrapper.FallbackIconData;
 		}
 	}
 
