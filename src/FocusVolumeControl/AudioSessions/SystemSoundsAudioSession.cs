@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace FocusVolumeControl.AudioSessions;
@@ -15,6 +16,9 @@ internal sealed class SystemSoundsAudioSession : IAudioSession
 	ISimpleAudioVolume _volumeControl;
 
 	public string DisplayName => "System sounds";
+
+	public IEnumerable<int> Pids => new int[0];
+
 	public string GetIcon() => "Images/systemSounds";
 
 	public void ToggleMute()

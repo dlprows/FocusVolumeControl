@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Runtime.InteropServices;
+using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
 
 namespace FocusVolumeControl.AudioSessions;
 
@@ -91,6 +92,91 @@ public interface IMMDeviceEnumerator
 	int GetDefaultAudioEndpoint(DataFlow dataFlow, Role role, out IMMDevice device);
 }
 
+public enum EStgmAccess
+{
+	STGM_READ = 0x0
+}
+
+[Guid("886d8eeb-8cf2-4446-8d02-cdba1dbdcf99"),
+ InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+public interface IPropertyStore
+{
+	[PreserveSig]
+	int GetCount(out int count);
+	[PreserveSig]
+	int GetAt(int iProp, out PropertyKey pkey);
+	[PreserveSig]
+	int GetValue(ref PropertyKey key, out PropVariant pv);
+	[PreserveSig]
+	int SetValue(ref PropertyKey key, ref PropVariant propvar);
+	[PreserveSig]
+	int Commit();
+}
+
+public struct PropertyKey
+{
+	public Guid fmtId;
+	public int PId;
+
+	public PropertyKey(Guid fmtId, int pId)
+	{
+		this.fmtId = fmtId;
+		this.PId = pId;
+	}
+}
+public struct Blob
+{
+	public int Length;
+	public IntPtr Data;
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public struct PropVariant
+{
+	[FieldOffset(0)] short vt;
+	[FieldOffset(2)] short wReserved1;
+	[FieldOffset(4)] short wReserved2;
+	[FieldOffset(6)] short wReserved3;
+	[FieldOffset(8)] sbyte cVal;
+	[FieldOffset(8)] byte bVal;
+	[FieldOffset(8)] short iVal;
+	[FieldOffset(8)] ushort uiVal;
+	[FieldOffset(8)] int lVal;
+	[FieldOffset(8)] uint ulVal;
+	[FieldOffset(8)] long hVal;
+	[FieldOffset(8)] ulong uhVal;
+	[FieldOffset(8)] float fltVal;
+	[FieldOffset(8)] double dblVal;
+	[FieldOffset(8)] Blob blobVal;
+	[FieldOffset(8)] DateTime date;
+	[FieldOffset(8)] bool boolVal;
+	[FieldOffset(8)] int scode;
+	[FieldOffset(8)] FILETIME filetime;
+	[FieldOffset(8)] IntPtr everything_else;
+
+	public object Value
+	{
+		get
+		{
+			var ve = (VarEnum)vt;
+
+			if((VarEnum)vt == VarEnum.VT_LPWSTR)
+			{
+				return Marshal.PtrToStringUni(everything_else);
+			}
+			throw new Exception();
+		}
+	}
+
+}
+
+public static class PKey
+{
+	public static readonly PropertyKey DeviceFriendlyName = new(new(0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0), 14);
+	public static readonly PropertyKey DeviceFriendlyNameAttributes = new(new(0x80d81ea6, 0x7473, 0x4b0c, 0x82, 0x16, 0xef, 0xc1, 0x1a, 0x2c, 0x4c, 0x8b), 3);
+	public static readonly PropertyKey DeviceInterfaceFriendlyName = new(new(0x026e516e, 0xb814, 0x414b, 0x83, 0xcd, 0x85, 0x6d, 0x6f, 0xef, 0x48, 0x22), 2);
+}
+
 [Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 public interface IMMDevice
 {
@@ -98,7 +184,7 @@ public interface IMMDevice
 	int Activate(ref Guid iid, CLSCTX dwClsCtx, IntPtr pActivationParams, [MarshalAs(UnmanagedType.IUnknown)] out object ppInterface);
 
 	[PreserveSig]
-	int NotImpl1();
+	int OpenPropertyStore(EStgmAccess stgmAccess, out IPropertyStore propertyStore);
 	[PreserveSig]
 	int GetId([Out, MarshalAs(UnmanagedType.LPWStr)] out string ppstrId);
 

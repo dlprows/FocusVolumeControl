@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace FocusVolumeControl.AudioSessions;
 
@@ -15,4 +17,6 @@ public interface IAudioSession
 	public void IncrementVolumeLevel(int step, int ticks);
 
 	public int GetVolumeLevel();
+	
+	public IEnumerable<int> Pids { get; }
 }

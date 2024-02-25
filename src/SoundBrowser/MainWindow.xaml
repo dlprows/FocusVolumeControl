@@ -6,14 +6,16 @@
         xmlns:local="clr-namespace:SoundBrowser"
         mc:Ignorable="d"
         Title="MainWindow" Height="800" Width="800">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <ScrollViewer>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Button x:Name="_pauseButton" Grid.Row="0" Click="PauseClicked"></Button>
 
-        <TextBlock x:Name="_tf" Grid.Row="0">current</TextBlock>
-        <TextBlock x:Name="_tf2" Grid.Row="1">list</TextBlock>
+            <TextBox x:Name="_tf" Grid.Row="1" IsReadOnly="True">current</TextBox>
 
-    </Grid>
+        </Grid>
+    </ScrollViewer>
 </Window>

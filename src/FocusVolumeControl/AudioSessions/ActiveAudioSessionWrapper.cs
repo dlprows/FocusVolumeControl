@@ -17,6 +17,10 @@ public sealed class ActiveAudioSessionWrapper : IAudioSession
 	private IEnumerable<ISimpleAudioVolume> Volume => Sessions.Cast<ISimpleAudioVolume>();
 
 	public IconWrapper? IconWrapper { get; set; }
+	public IEnumerable<int> Pids => Sessions.Select(x =>
+	{
+		x.GetProcessId(out var pid); return pid;
+	});
 
 	public string GetIcon()
 	{

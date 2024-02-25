@@ -162,9 +162,9 @@ public class AudioHelper
 	/// I also experimented with grabbing the parent process and enumerating through the windows to see if that would help, but any time the parent process was an unexpected process (explorer) it could blow up. so i decided not to bother for now
 	/// </summary>
 	/// <returns></returns>
-	public List<Process> GetPossibleProcesses()
+	public List<Process> GetPossibleProcesses(IntPtr? handleOverride = null)
 	{
-		var handle = Native.GetForegroundWindow();
+		var handle = handleOverride ?? Native.GetForegroundWindow();
 
 		if (handle == IntPtr.Zero)
 		{
@@ -174,7 +174,25 @@ public class AudioHelper
 		var ids = Native.GetProcessesOfChildWindows(handle);
 
 		Native.GetWindowThreadProcessId(handle, out var pid);
-		ids.Insert(0, pid);
+
+		if(ids.Count == 0 && pid == 0)
+		{
+			foreach(var p in Process.GetProcesses())
+			{
+				if(p.MainWindowHandle == handle)
+				{
+					if(p.MainWindowTitle == "HELLDIVERS™ 2")
+					{
+						ids = FindAudioSessionByProcessName("helldivers2");
+						break;
+					}
+				}
+			}
+		}
+		else
+		{
+			ids.Insert(0, pid);
+		}
 
 		var processes = ids.Distinct()
 						   .Select(x => Process.GetProcessById(x))
@@ -285,6 +303,81 @@ public class AudioHelper
 		var endpointVolume = (IAudioEndpointVolume)o;
 
 		return new SystemVolumeAudioSession(endpointVolume);
+	}
+
+
+	static Dictionary<string, List<int>> _audioSessionNameCache = new Dictionary<string, List<int>>();
+	private List<int> GetFromNameCacheIfPossible(string processName)
+	{
+		if(_audioSessionNameCache.TryGetValue(processName, out var result))
+		{
+			if(result.Count!= 0)
+			{
+				foreach(var pid in result)
+				{
+					var p = GetProcessById(pid);
+					if(p == null || p.ProcessName != processName)
+					{
+						_audioSessionNameCache.Remove(processName);
+						return null;
+					}
+				}
+				return result;
+			}
+		}
+		return null;
+	}
+
+
+	private List<int> FindAudioSessionByProcessName(string processName)
+	{
+		var cached = GetFromNameCacheIfPossible(processName);
+		if(cached != null)
+		{
+			return cached;
+		}
+
+		var results = new List<int>();
+		Process bestProcessMatch = null;
+
+		var deviceEnumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();
+
+		deviceEnumerator.EnumAudioEndpoints(DataFlow.Render, DeviceState.Active, out var deviceCollection);
+		deviceCollection.GetCount(out var numDevices);
+		for (int d = 0; d < numDevices; d++)
+		{
+			deviceCollection.Item(d, out var device);
+
+			Guid iid = typeof(IAudioSessionManager2).GUID;
+			device.Activate(ref iid, CLSCTX.ALL, IntPtr.Zero, out var m);
+			var manager = (IAudioSessionManager2)m;
+
+			device.GetId(out var currentDeviceId);
+
+			manager.GetSessionEnumerator(out var sessionEnumerator);
+
+			var currentIndex = int.MaxValue;
+
+			sessionEnumerator.GetCount(out var count);
+			for (int i = 0; i < count; i++)
+			{
+				sessionEnumerator.GetSession(i, out var session);
+				session.GetDisplayName(out var displayName);
+				session.GetProcessId(out var sessionProcessId);
+
+				var audioProcess = GetProcessById(sessionProcessId);
+
+				if(audioProcess != null && audioProcess.ProcessName == processName)
+				{
+					results.Add(sessionProcessId);
+				}
+			}
+		}
+
+		results = results.Distinct().ToList();
+
+		_audioSessionNameCache[processName] = results;
+		return results;
 	}
 
 }

@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CoreAudio" Version="1.27.0" />
+    <PackageReference Include="NHotkey.Wpf" Version="3.0.0" />
   </ItemGroup>
 
   <ItemGroup>
