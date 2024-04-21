@@ -66,6 +66,10 @@
     <Compile Include="AudioSessions\IAudioSession.cs" />
     <Compile Include="FallbackBehavior.cs" />
     <Compile Include="AudioHelpers\NameAndIconHelper.cs" />
+    <Compile Include="InternalsVisibleTo.cs" />
+    <Compile Include="Overrides\Override.cs" />
+    <Compile Include="Overrides\MatchType.cs" />
+    <Compile Include="Overrides\OverrideParser.cs" />
     <Compile Include="UI\IconExtraction.cs" />
     <Compile Include="UI\ISDConnectionExtensions.cs" />
     <Compile Include="Native.cs" />
@@ -91,7 +95,7 @@
     <Content Include="Images\**\*.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="PropertyInspector\**\*.js;PropertyInspector\**\*.css">
+    <Content Include="PropertyInspector\**\*.js;PropertyInspector\**\*.css;PropertyInspector\assets\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="PropertyInspector\PluginActionPI.html">

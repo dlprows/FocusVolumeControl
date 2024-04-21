@@ -10,9 +10,11 @@ using FocusVolumeControl.AudioSession;
 
 namespace FocusVolumeControl.AudioSessions;
 
+#nullable enable
+
 public sealed class ActiveAudioSessionWrapper : IAudioSession
 {
-	public string DisplayName { get; set; }
+	public string DisplayName { get; set; } = null!;
 	private List<IAudioSessionControl2> Sessions { get; } = new List<IAudioSessionControl2>();
 	private IEnumerable<ISimpleAudioVolume> Volume => Sessions.Cast<ISimpleAudioVolume>();
 
@@ -102,3 +104,4 @@ public sealed class ActiveAudioSessionWrapper : IAudioSession
 		return VolumeHelpers.GetVolumePercentage(level);
 	}
 }
+#nullable restore

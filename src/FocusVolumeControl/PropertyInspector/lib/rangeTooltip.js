@@ -29,6 +29,7 @@ function calcRangeLabel(elem) {
     return tooltipValue + outputType;
 }
 
+/*
 function setElementLabel(elem, str) {
     // Try to set this for the rangeLabel class, if it exists
     let label = elem.querySelector('.rangeLabel');
@@ -39,6 +40,7 @@ function setElementLabel(elem, str) {
         console.log('setElementLabel ERROR! No .rangeLabel found', elem);
     }
 }
+*/
 
 function setRangeTooltips() {
     console.log("Loading setRangeTooltips");
@@ -68,7 +70,7 @@ function setRangeTooltips() {
                 tooltip.style.top = (rangeRect.top - 32) + 'px';
             }
 
-            setElementLabel(elem, labelStr)
+            //setElementLabel(elem, labelStr)
         };
 
         rangeSelector.addEventListener(
@@ -100,7 +102,7 @@ function setRangeTooltips() {
                 console.log('rangeTooltip settingsUpdated called');
                 window.setTimeout(function () {
                     let str = calcRangeLabel(rangeSelector);
-                    setElementLabel(elem, str);
+                    //setElementLabel(elem, str);
                 }, 500);
             },
             false
@@ -112,7 +114,7 @@ function setRangeTooltips() {
                 console.log('rangeTooltip websocketCreate called');
                 window.setTimeout(function () {
                     let str = calcRangeLabel(rangeSelector);
-                    setElementLabel(elem, str);
+                    //setElementLabel(elem, str);
                 }, 500);
             },
             false

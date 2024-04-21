@@ -12,6 +12,11 @@ The screen updates to show the name/icon of the app so that you can always know 
 
 ![Focus volume control plugin preview](previews/1-preview.png?raw=true)
 
+## Help
+
+If you're having trouble with a specific applicaiton, there is an override that you can put in. 
+[More Details Here](Overrides.md)
+
 ## Developing
 
 build the solution with visual studio

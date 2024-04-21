@@ -6,8 +6,8 @@
     <meta name=apple-mobile-web-app-capable content=yes>
     <meta name=apple-mobile-web-app-status-bar-style content=black>
     <title>FocusVolumeControl Settings</title>
-    <link rel="stylesheet" href="./lib/sdpi.css">
-    <link rel="sytlesheet" href="./lib/rangeTooltip.css">
+    <link rel="stylesheet" href="./css/sdpi.css">
+    <link rel="sytlesheet" href="./css/rangeTooltip.css">
     <script src="lib/sdtools.common.js"></script>
     <script src="lib/rangeTooltip.js"></script>
 </head>
@@ -16,13 +16,20 @@
 
         <div class="sdpi-item">
             <div class="sdpi-item-label">Fallback</div>
-            <select class="sdpi-item-value sdProperty" id="fallbackBehavior" oninput="setSettings()">
+            <select class="sdpi-item-value select sdProperty" id="fallbackBehavior" oninput="setSettings()">
                 <option value="0">System Sounds</option>
                 <option value="1">Previous App</option>
                 <option value="2">Default Output Device Volume</option>
             </select>
         </div>
 
+        <details>
+            <summary>Fallback Details</summary>
+            <p>If you look at windows volume mixer, you will see that not all applications can have their volume controlled. The fallback behavior controls what happens when you are in an application that doesn't show up in the volume mixer</p>
+            <p>* System Sounds - Switch to system sounds. This will control windows sound effects such as when an error sound plays. If you're in an application that is making beeping sounds, this will often allow you to control those sounds while leaving things like your music/videos alone</p>
+            <p>* Previous App - Use the last app that had a volume control. This can result in the stream deck not changing after you have quit an application.</p>
+            <p>* Default Output Device Volume - Switch to the main volume control for the default output device. This will change the volume of the default output device. This is usually volume for all applications, unless you override the output device for specific applications.</p>
+        </details>
 
         <div type="range" class="sdpi-item sdShowTooltip">
             <div class="sdpi-item-label">Step Size</div>
@@ -32,14 +39,28 @@
                 <span class="clickable" value="1">10</span>
             </div>
         </div>
-        <div class="sdpi-info-label hidden" style="top: -1000;" value="">Tooltip</div>
+        <div class="sdpi-info-label hidden" style="z-index: 999;" value="">Tooltip</div>
+
+        <div type="textarea" class="sdpi-item">
+            <div class="sdpi-item-label">Overrides</div>
+            <span class="sdpi-item-value" textarea>
+                <textarea type="textarea" class="sdProperty" id="overrides" oninput="setSettings()"></textarea>
+            </span>
+        </div>
 
         <details>
-            <p>If you look at windows volume mixer, you will see that not all applications can have their volume controlled. The fallback behavior controls what happens when you are in an application that doesn't show up in the volume mixer</p>
-            <p>* System Sounds - Switch to system sounds. This will control windows sound effects such as when an error sound plays. If you're in an application that is making beeping sounds, this will often allow you to control those sounds while leaving things like your music/videos alone</p>
-            <p>* Previous App - Use the last app that had a volume control. This can result in the stream deck not changing after you have quit an application.</p>
-            <p>* Default Output Device Volume - Switch to the main volume control for the default output device. This will change the volume of the default output device. This is usually volume for all applications, unless you override the output device for specific applications.</p>
+            <summary>Override Details</summary>
+            <p>Some games use anti-cheat software that interferes with the ability to know what application is running, and pair it to the appropriate audio process.</p>
+            <p>There is nothing I can do about this.</p>
+            <p>In order to work around this, the overrides mechanism is there for you to manually map an application window to an audio process.</p>
+            <p>They synax for this is</p>
+            <p>[matching]: Window Title <br />Audio Process</p>
+            <p>Blank lines can be used for spacing<br/>Lines starting with // are ignored</p>
+            <p>[matching] can be eq, start, end, or regex. Which will perform an exact match, starts with, ends with, or regular expressions respectively.</p>
+            <p>Example:<br />eq: Task Manager<br />Discord</p>
         </details>
+
+
 
     </div>
 </body>

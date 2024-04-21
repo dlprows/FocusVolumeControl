@@ -1,8 +1,10 @@
 ﻿using FocusVolumeControl.AudioSessions;
+using FocusVolumeControl.Overrides;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace FocusVolumeControl.AudioHelpers;
 
@@ -13,6 +15,8 @@ public class AudioHelper
 	static object _lock = new object();
 	int[] _currentProcesses;
 	int _retryFallbackCount = 0;
+
+	public List<Override> Overrides { get; set; }
 
 	public IAudioSession Current { get; private set; }
 
@@ -113,7 +117,12 @@ public class AudioHelper
 	{
 		lock (_lock)
 		{
-			var processes = GetPossibleProcesses();
+			var processes = TryGetProcessFromOverrides();
+
+			if(processes == null)
+			{
+				processes = GetPossibleProcesses();
+			}
 			var processIds = processes?.Select(x => x.Id).ToArray();
 
 			//_currentProcesses null - first time getting sessions
@@ -175,27 +184,18 @@ public class AudioHelper
 
 		Native.GetWindowThreadProcessId(handle, out var pid);
 
-		if(ids.Count == 0 && pid == 0)
-		{
-			foreach(var p in Process.GetProcesses())
-			{
-				if(p.MainWindowHandle == handle)
-				{
-					if(p.MainWindowTitle == "HELLDIVERS™ 2")
-					{
-						ids = FindAudioSessionByProcessName("helldivers2");
-						break;
-					}
-				}
-			}
-		}
-		else
+		if(pid != 0)
 		{
 			ids.Insert(0, pid);
 		}
 
+		if(ids.Count == 0)
+		{
+			return new List<Process>();
+		}
+
 		var processes = ids.Distinct()
-						   .Select(x => Process.GetProcessById(x))
+						   .Select(Process.GetProcessById)
 						   .ToList();
 
 		if(processes.FirstOrDefault()?.ProcessName == "explorer")
@@ -328,6 +328,47 @@ public class AudioHelper
 		return null;
 	}
 
+	private List<Process> TryGetProcessFromOverrides(IntPtr? handleOverride = null)
+	{
+		var handle = handleOverride ?? Native.GetForegroundWindow();
+
+		if (Overrides?.Any() == true)
+		{
+			Process tmp = null;
+			foreach (var p in Process.GetProcesses())
+			{
+				if (p.MainWindowHandle == handle)
+				{
+					tmp = p;
+					break;
+				}
+			}
+
+			if (tmp != null)
+			{
+				foreach (var o in Overrides)
+				{
+					if (
+						(o.MatchType == MatchType.Equal && tmp.MainWindowTitle.Equals(o.WindowQuery, StringComparison.InvariantCultureIgnoreCase))
+						|| (o.MatchType == MatchType.StartsWith && tmp.MainWindowTitle.StartsWith(o.WindowQuery, StringComparison.OrdinalIgnoreCase))
+						|| (o.MatchType == MatchType.EndsWith && tmp.MainWindowTitle.EndsWith(o.WindowQuery, StringComparison.OrdinalIgnoreCase))
+						|| (o.MatchType == MatchType.Regex && Regex.IsMatch(tmp.MainWindowTitle, o.WindowQuery))
+						)
+					{
+						var ids = FindAudioSessionByProcessName(o.AudioProcessName);
+						if (ids?.Count > 0)
+						{
+							return ids.Distinct()
+								      .Select(Process.GetProcessById)
+									  .ToList();
+
+						}
+					}
+				}
+			}
+		}
+		return null;
+	}
 
 	private List<int> FindAudioSessionByProcessName(string processName)
 	{
@@ -338,7 +379,6 @@ public class AudioHelper
 		}
 
 		var results = new List<int>();
-		Process bestProcessMatch = null;
 
 		var deviceEnumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();
 
@@ -356,8 +396,6 @@ public class AudioHelper
 
 			manager.GetSessionEnumerator(out var sessionEnumerator);
 
-			var currentIndex = int.MaxValue;
-
 			sessionEnumerator.GetCount(out var count);
 			for (int i = 0; i < count; i++)
 			{
@@ -367,7 +405,13 @@ public class AudioHelper
 
 				var audioProcess = GetProcessById(sessionProcessId);
 
-				if(audioProcess != null && audioProcess.ProcessName == processName)
+				if(audioProcess == null)
+				{
+					continue;
+				}
+
+				var audioProcessName = _nameAndIconHelper.TryGetProcessNameWithoutIcon(audioProcess);
+				if(audioProcess.ProcessName == processName || displayName == processName || processName == audioProcessName)
 				{
 					results.Add(sessionProcessId);
 				}

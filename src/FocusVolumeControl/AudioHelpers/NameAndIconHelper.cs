@@ -82,6 +82,41 @@ public class NameAndIconHelper
 			}
 		}
 	}
+	
+	public string TryGetProcessNameWithoutIcon(Process process)
+	{
+		try
+		{
+			//appx packages are installed from the windows store. eg, itunes
+			var appx = AppxPackage.FromProcess(process);
+			if (appx == null)
+			{
+
+				//if the display name is already set, then it came from the display name of the audio session
+				if(!string.IsNullOrEmpty(process.MainWindowTitle))
+				{
+					return process.MainWindowTitle;
+				}
+
+				//using process.MainModule.FileVersionInfo sometimes throws permission exceptions
+				//we get the file version info with a limited query flag to avoid that
+				var fileVersionInfo = GetFileVersionInfo(process);
+				if(!string.IsNullOrEmpty(fileVersionInfo?.FileDescription))
+				{
+					return fileVersionInfo.FileDescription;
+				}
+
+				return process.ProcessName;
+			}
+			else
+			{
+				return appx.DisplayName ?? process.ProcessName;
+			}
+		}
+		catch { }
+		return process.ProcessName;
+	}
+
 
 	FileVersionInfo GetFileVersionInfo(Process process)
 	{

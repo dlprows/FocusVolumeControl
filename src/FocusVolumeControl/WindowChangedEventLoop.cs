@@ -8,6 +8,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 
+#nullable enable
+
 namespace FocusVolumeControl
 {
 	internal class WindowChangedEventLoop
@@ -16,10 +18,10 @@ namespace FocusVolumeControl
 		public static WindowChangedEventLoop Instance => _lazy.Value;
 
 		readonly Thread _thread;
-		Dispatcher _dispatcher;
+		Dispatcher? _dispatcher;
 
 		IntPtr _foregroundWindowChangedEvent;
-		Native.WinEventDelegate _delegate;
+		Native.WinEventDelegate? _delegate;
 
 		private WindowChangedEventLoop()
 		{
@@ -37,7 +39,7 @@ namespace FocusVolumeControl
 			_thread.Start();
 		}
 
-		public event Action WindowChanged;
+		public event Action? WindowChanged;
 
 		CancellationTokenSource? _cancellationTokenSource = null;
 
@@ -64,3 +66,5 @@ namespace FocusVolumeControl
 		}
 	}
 }
+
+#nullable restore

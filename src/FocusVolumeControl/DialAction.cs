@@ -2,6 +2,7 @@
 using BarRaider.SdTools.Payloads;
 using FocusVolumeControl.AudioHelpers;
 using FocusVolumeControl.AudioSessions;
+using FocusVolumeControl.Overrides;
 using FocusVolumeControl.UI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -15,6 +16,12 @@ namespace FocusVolumeControl;
 [PluginActionId("com.dlprows.focusvolumecontrol.dialaction")]
 public class DialAction : EncoderBase
 {
+	private const string DefaultOverrides = 
+		"""
+		//eq: HELLDIVERS™ 2
+		//helldivers2
+		""";
+
 	private class PluginSettings
 	{
 		[JsonProperty("fallbackBehavior")]
@@ -23,11 +30,15 @@ public class DialAction : EncoderBase
 		[JsonProperty("stepSize")]
 		public int StepSize { get; set; }
 
+		[JsonProperty("overrides")]
+		public string Overrides { get; set; }
+
 		public static PluginSettings CreateDefaultSettings()
 		{
 			PluginSettings instance = new PluginSettings();
 			instance.FallbackBehavior = FallbackBehavior.SystemSounds;
 			instance.StepSize = 1;
+			instance.Overrides = DefaultOverrides;
 			return instance;
 		}
 	}
@@ -46,12 +57,18 @@ public class DialAction : EncoderBase
 		else
 		{
 			settings = payload.Settings.ToObject<PluginSettings>();
+			if(string.IsNullOrEmpty(settings.Overrides))
+			{
+				settings.Overrides = DefaultOverrides;
+				_ = SaveSettings();
+			}
 		}
 
 		WindowChangedEventLoop.Instance.WindowChanged += WindowChanged;
 
 		try
 		{
+			_audioHelper.Overrides = OverrideParser.Parse(settings.Overrides);
 			//just in case we fail to get the active session, don't prevent the plugin from launching
 			var session = _audioHelper.GetActiveSession(settings.FallbackBehavior);
 			_ = UpdateStateIfNeeded(session);
@@ -220,7 +237,8 @@ public class DialAction : EncoderBase
 		try
 		{
 			Tools.AutoPopulateSettings(settings, payload.Settings);
-			_ = SaveSettings();
+			_audioHelper.Overrides = OverrideParser.Parse(settings.Overrides);
+			//_ = SaveSettings();
 		}
 		catch (Exception ex)
 		{

@@ -4,6 +4,8 @@ using FocusVolumeControl.UI;
 using System;
 using System.Drawing;
 
+#nullable enable
+
 namespace FocusVolumeControl.AudioSession
 {
 	public abstract class IconWrapper
@@ -101,3 +103,4 @@ namespace FocusVolumeControl.AudioSession
 	}
 
 }
+#nullable restore

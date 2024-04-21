@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
+
 namespace FocusVolumeControl.UI
 {
 	internal class JavaIconExtractor
@@ -94,3 +96,5 @@ namespace FocusVolumeControl.UI
 
 	}
 }
+
+#nullable restore

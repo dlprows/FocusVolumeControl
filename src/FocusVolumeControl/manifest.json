@@ -33,7 +33,7 @@
   "Name": "Focused Application Volume",
   "Description": "Control the volume of the focused application",
   "URL": "https://github.com/dlprows/FocusVolumeControl",
-  "Version": "1.2.0",
+  "Version": "1.3.0",
   "CodePath": "FocusVolumeControl",
   "Category": "Volume Control [dlprows]",
   "Icon": "Images/pluginIcon",
