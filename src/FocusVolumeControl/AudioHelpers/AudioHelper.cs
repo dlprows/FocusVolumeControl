@@ -17,6 +17,7 @@ public class AudioHelper
 	int _retryFallbackCount = 0;
 
 	public List<Override> Overrides { get; set; }
+	public List<string> Ignored { get; set; }
 
 	public IAudioSession Current { get; private set; }
 
@@ -53,6 +54,11 @@ public class AudioHelper
 		{
 			deviceCollection.Item(d, out var device);
 
+			if(device == null)
+			{
+				continue;
+			}
+
 			Guid iid = typeof(IAudioSessionManager2).GUID;
 			device.Activate(ref iid, CLSCTX.ALL, IntPtr.Zero, out var m);
 			var manager = (IAudioSessionManager2)m;
@@ -61,12 +67,22 @@ public class AudioHelper
 
 			manager.GetSessionEnumerator(out var sessionEnumerator);
 
+			if(sessionEnumerator == null)
+			{
+				continue;
+			}
+
 			var currentIndex = int.MaxValue;
 
 			sessionEnumerator.GetCount(out var count);
 			for (int i = 0; i < count; i++)
 			{
 				sessionEnumerator.GetSession(i, out var session);
+
+				if(session == null)
+				{
+					continue;
+				}
 
 				session.GetProcessId(out var sessionProcessId);
 				var audioProcess = GetProcessById(sessionProcessId);
@@ -131,7 +147,13 @@ public class AudioHelper
 			if (_currentProcesses == null || !_currentProcesses.SequenceEqual(processIds) || _retryFallbackCount == 5)
 			{
 				_retryFallbackCount = 0;
-				Current = FindSession(processes);
+
+				var newSession = FindSession(processes);
+
+				if(newSession != null || fallbackBehavior != FallbackBehavior.PreviousApp)
+				{
+					Current = newSession;
+				}
 			}
 			else if(Current is SystemSoundsAudioSession || Current is SystemVolumeAudioSession)
 			{
@@ -202,6 +224,11 @@ public class AudioHelper
 		{
 			return new List<Process>();
 		}
+		
+		if(processes.Any(x => Ignored.Contains(x.ProcessName)))
+		{
+			return new List<Process>();
+		}
 
 		try
 		{
@@ -241,6 +268,11 @@ public class AudioHelper
 		{
 			deviceCollection.Item(d, out var device);
 
+			if(device == null)
+			{
+				continue;
+			}
+
 			Guid iid = typeof(IAudioSessionManager2).GUID;
 			device.Activate(ref iid, CLSCTX.ALL, IntPtr.Zero, out var m);
 			var manager = (IAudioSessionManager2)m;
@@ -248,10 +280,20 @@ public class AudioHelper
 
 			manager.GetSessionEnumerator(out var sessionEnumerator);
 
+			if(sessionEnumerator == null)
+			{
+				continue;
+			}
+
 			sessionEnumerator.GetCount(out var count);
 			for (int i = 0; i < count; i++)
 			{
 				sessionEnumerator.GetSession(i, out var session);
+
+				if(session == null)
+				{
+					continue;
+				}
 
 				var volume = (ISimpleAudioVolume)session;
 				var guid = Guid.Empty;
@@ -271,6 +313,10 @@ public class AudioHelper
 		{
 			deviceCollection.Item(d, out var device);
 
+			if(device == null)
+			{
+				continue;
+			}
 
 			Guid iid = typeof(IAudioSessionManager2).GUID;
 			device.Activate(ref iid, CLSCTX.ALL, IntPtr.Zero, out var m);
@@ -279,10 +325,20 @@ public class AudioHelper
 
 			manager.GetSessionEnumerator(out var sessionEnumerator);
 
+			if(sessionEnumerator == null)
+			{
+				continue;
+			}
+
 			sessionEnumerator.GetCount(out var count);
 			for (int i = 0; i < count; i++)
 			{
 				sessionEnumerator.GetSession(i, out var session);
+
+				if(session == null)
+				{
+					continue;
+				}
 
 				if (session.IsSystemSoundsSession() == 0)
 				{
@@ -388,6 +444,11 @@ public class AudioHelper
 		{
 			deviceCollection.Item(d, out var device);
 
+			if(device == null)
+			{
+				continue;
+			}
+
 			Guid iid = typeof(IAudioSessionManager2).GUID;
 			device.Activate(ref iid, CLSCTX.ALL, IntPtr.Zero, out var m);
 			var manager = (IAudioSessionManager2)m;
@@ -396,10 +457,21 @@ public class AudioHelper
 
 			manager.GetSessionEnumerator(out var sessionEnumerator);
 
+			if(sessionEnumerator == null)
+			{
+				continue;
+			}
+
 			sessionEnumerator.GetCount(out var count);
 			for (int i = 0; i < count; i++)
 			{
 				sessionEnumerator.GetSession(i, out var session);
+
+				if(session == null)
+				{
+					continue;
+				}
+
 				session.GetDisplayName(out var displayName);
 				session.GetProcessId(out var sessionProcessId);
 

@@ -33,12 +33,16 @@ public class DialAction : EncoderBase
 		[JsonProperty("overrides")]
 		public string Overrides { get; set; }
 
+		[JsonProperty("ignored")]
+		public string Ignored { get; set; }
+
 		public static PluginSettings CreateDefaultSettings()
 		{
 			PluginSettings instance = new PluginSettings();
 			instance.FallbackBehavior = FallbackBehavior.SystemSounds;
 			instance.StepSize = 1;
 			instance.Overrides = DefaultOverrides;
+			instance.Ignored = "";
 			return instance;
 		}
 	}
@@ -57,9 +61,20 @@ public class DialAction : EncoderBase
 		else
 		{
 			settings = payload.Settings.ToObject<PluginSettings>();
+			bool save = false;
 			if(string.IsNullOrEmpty(settings.Overrides))
 			{
 				settings.Overrides = DefaultOverrides;
+				save = true;
+			}
+			if(string.IsNullOrEmpty(settings.Ignored))
+			{
+				settings.Ignored = "";
+				save = true;
+			}
+
+			if(save)
+			{
 				_ = SaveSettings();
 			}
 		}
@@ -69,6 +84,7 @@ public class DialAction : EncoderBase
 		try
 		{
 			_audioHelper.Overrides = OverrideParser.Parse(settings.Overrides);
+			_audioHelper.Ignored = IgnoreParser.Parse(settings.Ignored);
 			//just in case we fail to get the active session, don't prevent the plugin from launching
 			var session = _audioHelper.GetActiveSession(settings.FallbackBehavior);
 			_ = UpdateStateIfNeeded(session);
@@ -238,6 +254,7 @@ public class DialAction : EncoderBase
 		{
 			Tools.AutoPopulateSettings(settings, payload.Settings);
 			_audioHelper.Overrides = OverrideParser.Parse(settings.Overrides);
+			_audioHelper.Ignored = IgnoreParser.Parse(settings.Ignored);
 			//_ = SaveSettings();
 		}
 		catch (Exception ex)

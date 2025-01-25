@@ -67,6 +67,7 @@
     <Compile Include="FallbackBehavior.cs" />
     <Compile Include="AudioHelpers\NameAndIconHelper.cs" />
     <Compile Include="InternalsVisibleTo.cs" />
+    <Compile Include="Overrides\IgnoreParser.cs" />
     <Compile Include="Overrides\Override.cs" />
     <Compile Include="Overrides\MatchType.cs" />
     <Compile Include="Overrides\OverrideParser.cs" />
