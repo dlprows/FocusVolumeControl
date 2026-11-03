@@ -26,10 +26,11 @@ internal class UIState
 	[JsonProperty("icon")]
 	public ValueWithOpacity<string> icon { get; private init; }
 
-	public UIState(IAudioSession session)
+	public UIState(IAudioSession session, bool systemMuted = false)
 	{
 		var volume = session.GetVolumeLevel();
-		var opacity = session.IsMuted() ? 0.5f : 1;
+		// Also show the muted state when the system volume is muted, otherwise it is invisible while an app is focused
+		var opacity = session.IsMuted() || systemMuted ? 0.5f : 1;
 		var iconData = session.GetIcon();
 
 		Title = session.DisplayName;
