@@ -29,8 +29,9 @@ internal class UIState
 	public UIState(IAudioSession session)
 	{
 		var volume = session.GetVolumeLevel();
-		var opacity = session.IsMuted() ? 0.5f : 1;
-		var iconData = session.GetIcon();
+		// Muted state is shown with a red slash over the icon (like Elgato's Volume Controller) instead of lowering opacity
+		var opacity = 1f;
+		var iconData = session.IsMuted() ? MutedIconOverlay.Apply(session.GetIcon()) : session.GetIcon();
 
 		Title = session.DisplayName;
 		Value = new() { Value = $"{volume}%", Opacity = opacity };
