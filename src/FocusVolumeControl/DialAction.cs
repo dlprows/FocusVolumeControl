@@ -49,6 +49,22 @@ public class DialAction : EncoderBase
 
 	PluginSettings settings;
 	static AudioHelper _audioHelper = new AudioHelper();
+	static IAudioSession _systemVolume;
+
+	// Mute state of the system (master) volume, independent of the focused app
+	static bool IsSystemMuted()
+	{
+		try
+		{
+			_systemVolume ??= _audioHelper.GetSystemVolume();
+			return _systemVolume.IsMuted();
+		}
+		catch
+		{
+			_systemVolume = null;
+			return false;
+		}
+	}
 	UIState _previousState;
 
 	public DialAction(ISDConnection connection, InitialPayload payload) : base(connection, payload)
@@ -178,7 +194,15 @@ public class DialAction : EncoderBase
 			var activeSession = _audioHelper.Current;
 			if (activeSession != null)
 			{
-				activeSession.ToggleMute();
+				if (IsSystemMuted() && activeSession is not SystemVolumeAudioSession)
+				{
+					// System volume was muted (e.g. from the desktop): unmute it from any focused app
+					_systemVolume.ToggleMute();
+				}
+				else
+				{
+					activeSession.ToggleMute();
+				}
 				await UpdateStateIfNeeded(activeSession);
 			}
 			else
@@ -217,7 +241,7 @@ public class DialAction : EncoderBase
 			if (audioSession != null)
 			{
 
-				var uiState = new UIState(audioSession);
+				var uiState = new UIState(audioSession, IsSystemMuted());
 
 				if (_previousState != null && uiState != null &&
 					uiState.Title == _previousState.Title &&
